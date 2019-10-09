@@ -1,0 +1,13 @@
+name = "Hotwire"
+uuid = "d5de4fbe-640e-469d-b7ad-3c69fc3f3f61"
+authors = ["Paulo Jabardo", "IPT"]
+version = "0.1.0"
+
+[compat]
+julia = "1"
+
+[extras]
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Test"]
