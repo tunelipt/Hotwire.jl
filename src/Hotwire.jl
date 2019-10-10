@@ -1,5 +1,8 @@
 module Hotwire
 
-greet() = print("Hello World!")
+include("resistor.jl")
+include("wire.jl")
+
+export Thermistor, Resistor, AbstractResistor, temperature, resistance
 
 end # module
