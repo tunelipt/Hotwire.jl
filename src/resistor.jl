@@ -121,14 +121,14 @@ type `Resistor`, see [`Thermistor`](@ref).
 """
 resistance(r::AbstractResistor) = r.R0
 resistance(r::Resistor, T) = r.R0 * (1.0 + r.α * (T - r.T0))
-resistance(th::Thermistor, T) = th.R₀ * exp( -th.B * (1/th.T₀ - 1/(T+273.15) ) )
+resistance(th::Thermistor, T) = th.R0 * exp( -th.B * (1/th.T0 - 1/(T+273.15) ) )
 
 temperature(r::AbstractResistor) = r.T0
 temperature(r::Resistor, R) = 1/r.α * (R/r.R0 - 1.0) + r.T0
-temperature(th::Thermistor, R) = 1/( 1/th.T₀ + 1/th.B * log(R/th.R₀) ) - 273.15
+temperature(th::Thermistor, R) = 1/( 1/th.T0 + 1/th.B * log(R/th.R0) ) - 273.15
 
 (th::Thermistor)(T) = resistance(th, T)
-(th::Thermistor)() = th.R₀
+(th::Thermistor)() = th.R0
 (r::Resistor)(T) = resistance(r, T)
 (r::Resistor)() = resistance(r)
 

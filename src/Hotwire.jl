@@ -1,8 +1,9 @@
 module Hotwire
 
-include("resistor.jl")
-include("wire.jl")
-
 export Thermistor, Resistor, AbstractResistor, temperature, resistance
+
+include("resistor.jl")
+#include("wire.jl")
+
 
 end # module
