@@ -42,6 +42,13 @@ overtemp(w::CTASensor) = optemperature(w) - temperature(w.R)
                                           
                                           
 """
+    CCASensor(R, a)
+
+A structure to manage constant current anemometer sensors (CCA)
+
+ * `R` Resistance element
+ * `I` current in Ampere
+
 
 """
 struct CCASensor{ResType <: AbstractResistor} <: AbstractThermalAnemometer
@@ -50,3 +57,7 @@ struct CCASensor{ResType <: AbstractResistor} <: AbstractThermalAnemometer
     "Operating current in Ampere"
     I::Float64
 end
+
+resistor(w::CCASensor) = w.R
+"Current in A flowing through the CCA"
+current(w::CCASensor) = w.I

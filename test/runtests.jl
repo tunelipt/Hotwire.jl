@@ -44,6 +44,11 @@ using Test
     @test optemperature(w) == 100.0
     @test overtemp(w) ≈ 75.0
     @test overheat_ratio(w) ≈ a
-    
+
+    # CCASensor - not much to do
+    r = Resistor(1.0, 1.0, 0.0)
+    w = CCASensor(r, 1.0)
+    @test resistor(w) == r
+    @test current(w) == 1.0
     
 end
