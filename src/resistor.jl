@@ -126,6 +126,7 @@ resistance(th::Thermistor, T) = th.R0 * exp( -th.B * (1/th.T0 - 1/(T+273.15) ) )
 temperature(r::AbstractResistor) = r.T0
 temperature(r::Resistor, R) = 1/r.α * (R/r.R0 - 1.0) + r.T0
 temperature(th::Thermistor, R) = 1/( 1/th.T0 + 1/th.B * log(R/th.R0) ) - 273.15
+temperature(th::Thermistor) = th.T0 - 273.15
 
 (th::Thermistor)(T) = resistance(th, T)
 (th::Thermistor)() = th.R0
