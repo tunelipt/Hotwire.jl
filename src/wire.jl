@@ -2,12 +2,13 @@
 abstract type AbstractThermalAnemometer end
 
 """
-    CTASensor(R, a)
+    CTASensor(R, Rw)
 
 A structure to manage constant temperature anemometer sensors (CTA)
 
  * `R` Resistance element
- * `a` overheat ratio
+ * `Rw` Operating resistance
+ * `gain` Output gain, ``Eo = g⋅E``
 
 The overheat ratio is defined by the ratio between over-resistance and reference 
 resistance:
@@ -21,25 +22,30 @@ struct CTASensor{ResType <: AbstractResistor} <: AbstractThermalAnemometer
     "Element whose resistance changes with temperature"
     R::ResType
     "Operating temperature of the sensor"
-    Tw::Float64
-    "Reference temperature"
+    Rw::Float64
+    "Output gain"
+    gain::Float64
 end
 
+CTASensor(R::ResType, Rw, gain=1.0) where {ResType <: AbstractResistor} = CTASensor(R,Rw,gain)
 "Resistor element of the CTA sensor"
 resistor(w::CTASensor) = w.R
 
 "Operating temperature of the CTA"
-optemperature(w::CTASensor) = w.Tw
+optemperature(w::CTASensor) = temperature(w.R, w.Rw)
 
 "Overheat ratio of the CTA sensor"
-overheat_ratio(w::CTASensor) = resistance(w.R, w.Tw)/resistance(w.R) - 1.0
+overheat_ratio(w::CTASensor) = w.Rw/resistance(w.R) - 1.0
+
 
 
 "Over temperature"
 overtemp(w::CTASensor) = optemperature(w) - temperature(w.R)
 
 
-                                          
+"Gain of anemometer output"
+gain(w::AbstractThermalAnemometer) = w.gain
+
                                           
 """
     CCASensor(R, a)
@@ -56,7 +62,10 @@ struct CCASensor{ResType <: AbstractResistor} <: AbstractThermalAnemometer
     R::ResType
     "Operating current in Ampere"
     I::Float64
+    "Output gain"
+    gain::Float64
 end
+CCASensor(R::ResType, I, gain=1.0) where {ResType <: AbstractResistor} = CCASensor(R,I,gain)
 
 resistor(w::CCASensor) = w.R
 "Current in A flowing through the CCA"
