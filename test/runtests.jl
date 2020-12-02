@@ -36,6 +36,9 @@ using Test
     @test overtemp(w) ≈ 100.0
     @test overheat_ratio(w) ≈ 1.0
 
+    w1 = Wire(1.0, 2.0, 0.0, 1.0)
+    @test w == w1
+    
     r = Thermistor(1e3, 3300, 25.0)
     Rw = 100.0
     w = CTASensor(r, Rw)

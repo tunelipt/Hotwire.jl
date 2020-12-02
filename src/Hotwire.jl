@@ -1,7 +1,7 @@
 module Hotwire
 
 export Thermistor, Resistor, AbstractResistor, temperature, resistance
-export CTASensor, resistor, optemperature, overtemp, overheat_ratio, gain
+export CTASensor, Wire, resistor, optemperature, overtemp, overheat_ratio, gain
 export CCASensor, current
 export tempcorr
 include("resistor.jl")
