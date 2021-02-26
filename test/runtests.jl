@@ -9,7 +9,7 @@ using Test
     @test resistance(r) == 1e3
     @test resistance(r, 20.0) == 1e3
 
-    r = Resistor(1e3, 1.0, 20.0)
+    r = Resistor(1e3, 0.01, 20.0)
     @test resistance(r, 20.0) == 1e3
     @test resistance(r, 21.0) == 1.01e3
 
@@ -29,14 +29,14 @@ using Test
 
     # CTASensor
 
-    r = Resistor(1.0, 1.0, 0.0)
+    r = Resistor(1.0, 0.01, 0.0)
     w = CTASensor(r, 2.0)
     @test r == resistor(w)
     @test optemperature(w) ≈ 100.0
     @test overtemp(w) ≈ 100.0
     @test overheat_ratio(w) ≈ 1.0
 
-    w1 = Wire(1.0, 2.0, 0.0, 1.0)
+    w1 = Wire(1.0, 2.0, 0.0, 0.01)
     @test w == w1
     
     r = Thermistor(1e3, 3300, 25.0)
@@ -50,7 +50,7 @@ using Test
     @test overheat_ratio(w) ≈ a
 
     # CCASensor - not much to do
-    r = Resistor(1.0, 1.0, 0.0)
+    r = Resistor(1.0, 0.01, 0.0)
     w = CCASensor(r, 1.0)
     @test resistor(w) == r
     @test current(w) == 1.0
@@ -58,7 +58,7 @@ using Test
     # tempcorr.jl
     # tempcorr(CTASensor)
     Too = 20.0
-    r = Resistor(3.5, 0.36, Too)
+    r = Resistor(3.5, 0.0036, Too)
     w = CTASensor(r, 5.5)
     @test 1.0 ≈ tempcorr(w, 1.0, Too) # No temperature correction
     @test tempcorr(w, 1.0, 25.0) > 1.0 # Increased temperature -> lower anemometer output
@@ -83,7 +83,7 @@ using Test
 
     # tempcorr(CCASensor)
     To = 20.0
-    r = Resistor(3.5, 0.36, To)
+    r = Resistor(3.5, 0.0036, To)
     Two = 100.0
 
     Rwo = resistance(r, Two)

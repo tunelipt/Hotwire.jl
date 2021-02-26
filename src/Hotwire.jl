@@ -8,4 +8,5 @@ include("resistor.jl")
 include("wire.jl")
 include("tempcorr.jl")
 
+include("probes.jl")
 end # module

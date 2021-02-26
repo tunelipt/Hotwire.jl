@@ -35,7 +35,7 @@ where ``Q⋅β`` corrects the sensor temperature (``Tw``) to the outer surface m
 """
 function tempcorr(w::CTASensor, E, temp)
     Tw = optemperature(w)
-    Too = temperature(w.R)
+    Too = temperature(resistor(w))
     return E * sqrt( (Tw - Too) / (Tw - temp) )
 end
 

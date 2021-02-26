@@ -23,15 +23,19 @@ struct CTASensor{ResType <: AbstractResistor} <: AbstractThermalAnemometer
     R::ResType
     "Operating temperature of the sensor"
     Rw::Float64
+    "Reference temperature"
+    T₀::Float64
     "Output gain"
     gain::Float64
+    
 end
 
-CTASensor(R::ResType, Rw, gain=1.0) where {ResType <: AbstractResistor} = CTASensor(R,Rw,gain)
-"Resistor element of the CTA sensor"
-resistor(w::CTASensor) = w.R
+CTASensor(R::ResType, Rw; gain=1.0) where {ResType <: AbstractResistor} = CTASensor(R, Rw, temperature(R), gain)
 
-Wire(R0, Rw, T0=20.0, α=0.36, gain=1.0) = CTASensor(Resistor(R0, α, T0), Rw, gain)
+CTASensor(R::ResType, Rw, T₀; gain=1.0) where {ResType <: AbstractResistor} = CTASensor(R, Rw, T₀, gain)
+
+
+Wire(R₀, Rw, T₀=20.0, α=0.36, gain=1.0) = CTASensor(Resistor(R₀, α, T₀), Rw; gain=gain)
 
 "Operating temperature of the CTA"
 optemperature(w::CTASensor) = temperature(w.R, w.Rw)
@@ -44,6 +48,9 @@ overheat_ratio(w::CTASensor) = w.Rw/resistance(w.R) - 1.0
 "Over temperature"
 overtemp(w::CTASensor) = optemperature(w) - temperature(w.R)
 
+
+"Resistor element of a thermal anemometer sensor"
+resistor(w::AbstractThermalAnemometer) = w.R
 
 "Gain of anemometer output"
 gain(w::AbstractThermalAnemometer) = w.gain
@@ -67,8 +74,7 @@ struct CCASensor{ResType <: AbstractResistor} <: AbstractThermalAnemometer
     "Output gain"
     gain::Float64
 end
-CCASensor(R::ResType, I, gain=1.0) where {ResType <: AbstractResistor} = CCASensor(R,I,gain)
+CCASensor(R::ResType, I; gain=1.0) where {ResType <: AbstractResistor} = CCASensor(R,I,gain)
 
-resistor(w::CCASensor) = w.R
 "Current in A flowing through the CCA"
 current(w::CCASensor) = w.I

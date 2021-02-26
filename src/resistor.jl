@@ -42,12 +42,12 @@ julia> temperature(R, 1010)
 """
 struct Resistor <: AbstractResistor
     "Resistance at reference temperature"
-    R0::Float64
+    R₀::Float64
     "Linear resistance coefficient"
     α::Float64
     "Reference temperature"
-    T0::Float64
-    Resistor(R0=1e3, α=0.0, T₀=20.0) = new(R0, α/100, T₀)
+    T₀::Float64
+    Resistor(R₀=1e3, α=0.0, T₀=20.0) = new(R₀, α, T₀)
 end
 
 
@@ -56,7 +56,7 @@ end
 """
     R = Thermistor(R₀, B, T₀)
 
-Models a NTC thermistor. In the constructor, `R0` is the resistance of the thermistor at the reference temperature  `T0`. For convenience, the temperature should be expressed in °C, but it is stored in K. `B` is a coefficient that characterizes the temperature dependence of the thermistor. In the model used her, the resistance varies with temperature according to the following equation:
+Models a NTC thermistor. In the constructor, `R0` is the resistance of the thermistor at the reference temperature  `T₀`. For convenience, the temperature should be expressed in °C, but it is stored in K. `B` is a coefficient that characterizes the temperature dependence of the thermistor. In the model used her, the resistance varies with temperature according to the following equation:
 
 ```math
 R = R₀ \\exp B \\left(\\frac{1}{T₀} - \\frac{1}{T}\\right)
@@ -68,7 +68,7 @@ where
  * T is the temperature in K, where the value of resistance should be calculated
  * B is an empirical coefficient in K that characterizes the temperature dependency of the resistance
 
-    When using the struct `Thermistor`, beware: in the constructor, the unit of T0 is °C NOT K.
+    When using the struct `Thermistor`, beware: in the constructor, the unit of T₀ is °C NOT K.
 
 # Examples
 ```jldoctest
@@ -97,13 +97,13 @@ julia> temperature(R, 4163.588)
 
 """
 struct Thermistor <: AbstractResistor
-    "Reference resistance in Ω at temperature `T0`"
-    R0::Float64
+    "Reference resistance in Ω at temperature `T₀`"
+    R₀::Float64
     "Thermistor's B coefficient in K "
     B::Float64
     "Reference temperature in K"
-    T0::Float64
-    Thermistor(R0=5e3, B=0.0, T0=25.0) = new(R0, B, T0+273.15)
+    T₀::Float64
+    Thermistor(R₀=5e3, B=0.0, T₀=25.0) = new(R₀, B, T₀+273.15)
 end
 
 
@@ -119,17 +119,17 @@ See [`Thermistor`](@ref) to see more details of the  type  `Thermistor`. For mor
 type `Resistor`, see [`Thermistor`](@ref).
 
 """
-resistance(r::AbstractResistor) = r.R0
-resistance(r::Resistor, T) = r.R0 * (1.0 + r.α * (T - r.T0))
-resistance(th::Thermistor, T) = th.R0 * exp( -th.B * (1/th.T0 - 1/(T+273.15) ) )
+resistance(r::AbstractResistor) = r.R₀
+resistance(r::Resistor, T) = r.R₀ * (1.0 + r.α * (T - r.T₀))
+resistance(th::Thermistor, T) = th.R₀ * exp( -th.B * (1/th.T₀ - 1/(T+273.15) ) )
 
-temperature(r::AbstractResistor) = r.T0
-temperature(r::Resistor, R) = 1/r.α * (R/r.R0 - 1.0) + r.T0
-temperature(th::Thermistor, R) = 1/( 1/th.T0 + 1/th.B * log(R/th.R0) ) - 273.15
-temperature(th::Thermistor) = th.T0 - 273.15
+temperature(r::AbstractResistor) = r.T₀
+temperature(r::Resistor, R) = 1/r.α * (R/r.R₀ - 1.0) + r.T₀
+temperature(th::Thermistor, R) = 1/( 1/th.T₀ + 1/th.B * log(R/th.R₀) ) - 273.15
+temperature(th::Thermistor) = th.T₀ - 273.15
 
 (th::Thermistor)(T) = resistance(th, T)
-(th::Thermistor)() = th.R0
+(th::Thermistor)() = th.R₀
 (r::Resistor)(T) = resistance(r, T)
 (r::Resistor)() = resistance(r)
 
