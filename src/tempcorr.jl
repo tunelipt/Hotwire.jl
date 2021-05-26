@@ -1,12 +1,14 @@
 
 
 """
-    tempcorr(w::CTASensor, temp)
+    tempcorr(w::CTASensor, E, temp, T0)
 
 Corrects the anemometer output due to differences in flow temperature.
 
- * `w` `CTASensor` object
- * `temp` Temperature
+ * `w::CTASensor` object
+ * `E` Anemometer output
+ * `temp` Temperature during measurement
+ * `T0` Reference calibration temperature. If not provided, use ref. temp of Rw
 
 This correction assumes that only the temperature changed and not fluid properties. Another function that takes that into account will be developped later.
 
@@ -33,21 +35,24 @@ If between the resistance element and the flow is an insulator (very common in t
 where ``Q⋅β`` corrects the sensor temperature (``Tw``) to the outer surface mean temperature.
 
 """
-function tempcorr(w::CTASensor, E, temp)
+function tempcorr(w::CTASensor, E, temp, T0)
     Tw = optemperature(w)
-    Too = temperature(resistor(w))
-    return E * sqrt( (Tw - Too) / (Tw - temp) )
+    return E * sqrt( (Tw - T0) / (Tw - temp) )
 end
 
+tempcorr(w::CTASensor, E, temp) = tempcorr(w, E, temp, temperature(w.R))
+
 
 
 """
-    tempcorr(w::CCASensor, temp)
+    tempcorr(w::CCASensor, E, temp, T0)
 
 Corrects the anemometer output due to differences in flow temperature.
 
- * `w` `CCASensor` object
- * `temp` Temperature
+ * `w::CCASensor` Constant current sensor
+ * `E` Anemometer output
+ * `temp` Temperature during measurement
+ * `T0` Reference calibration temperature. If not provided, use ref. temp of R.
 
 This correction assumes that only the temperature changed and not fluid properties. Another function that takes that into account will be developped later.
 
@@ -74,12 +79,13 @@ If between the resistance element and the flow is an insulator (very common in t
 where ``Q⋅β`` corrects the sensor temperature (``Tw``) to the outer surface mean temperature.
 
 """
-function tempcorr(w::CCASensor{Resistor}, E, temp)
+function tempcorr(w::CCASensor{Resistor}, E, temp, T0)
 
     α = w.R.α
-    To = temperature(w.R)
-    return E / (1.0 + α*(temp - To))
+    return E / (1.0 + α*(temp - T0))
 end
+
+tempcorr(w::CCASensor{Resistor}, E, temp) = tempcorr(w, E, temp, temperature(w.R))
 
 function funroot(f, x1, x2, eps=1e-7, maxiter=100)
     y1 = f(x1)
@@ -112,13 +118,13 @@ function funroot(f, x1, x2, eps=1e-7, maxiter=100)
 end
 
 
-function tempcorr(w::CCASensor, E, temp, eps=1e-7, maxiter=100)
+function tempcorr(w::CCASensor, E, temp, T0; eps=1e-7, maxiter=100)
 
     R = w.R
     g = gain(w)
     I = current(w)
     Tw = temperature(R, E/(g*I))
-    To = temperature(w.R)
+    To = T0
     ΔT = Tw - temp
 
     f = Eo -> E*(temperature(R, Eo/(g*I)) - To) - Eo * ΔT
@@ -126,6 +132,10 @@ function tempcorr(w::CCASensor, E, temp, eps=1e-7, maxiter=100)
     #error("tempcorr(w::CCASensor, $E, $temp failed to converge in $maxiter iterations with $err error!")
     return Eo
 end
+
+tempcorr(w::CCASensor, E, temp; eps=1e-7, maxiter=100) =
+    tempcorr(w, E, temp, temperature(w.R), eps=eps, maxiter=maxiter)
+
 
 
 

@@ -81,6 +81,14 @@ using Test
     Tw = optemperature(w)
     @test E/E1 ≈ sqrt( (Tw - Too) / (Tw - Too1) )
 
+    @test 1.0 ≈ tempcorr(w, 1.0, Too, Too)
+    @test tempcorr(w, 1.0, 25.0, Too) > 1.0
+    @test tempcorr(w, 1.0, 15.0, Too) < 1.0
+    E = tempcorr(w, E1, Too1, Too)
+    Tw = optemperature(w)
+    @test E/E1 ≈ sqrt( (Tw - Too) / (Tw - Too1) )
+    
+    
     # tempcorr(CCASensor)
     To = 20.0
     r = Resistor(3.5, 0.0036, To)
@@ -95,7 +103,8 @@ using Test
     w = CCASensor(r, I, g)
 
     @test tempcorr(w, Eo, To) ≈ Eo
-
+    @test tempcorr(w, Eo, To, To) ≈ Eo
+    
     Te = 30.0
     E = Eo
     Eo = tempcorr(w, E, Te)
@@ -109,6 +118,18 @@ using Test
     @test hA ≈ hAo
 
 
+    Te = 30.0
+    E = Eo
+    Eo = tempcorr(w, E, Te, temperature(w.R))
+    Two = temperature(r, Eo/(g*I))
+    Tw = temperature(r, E/(g*I))
+    Qo = Eo/g * I
+    Q = E/g * I
+    hAo = Qo / (Two - To)
+    hA = Q / (Tw - Te)
+    @test Eo / E ≈ (Two - To) / (Tw - Te)
+    @test hA ≈ hAo
+    
     # Testing root finding equation
     @test Hotwire.funroot(x->(x^2-1.0), 0.5, 0.6) ≈ 1.0 atol=1e-4
     @test Hotwire.funroot(x->sin(x), π*1.1, π*1.02) ≈ π atol=1e-4
@@ -124,6 +145,20 @@ using Test
     for Te in [15.0, 30.0]
         for E in [0.5, 1.0, 2.0]
             Eo = tempcorr(w, E, Te)
+            Two = temperature(r, Eo/(g*I))
+            Tw = temperature(r, E/(g*I))
+            @test Eo/E ≈ (Two-To) / (Tw - Te) atol=1e-6
+            Qo = Eo/g * I
+            Q = E/g * I
+            hAo = Qo / (Two - To)
+            hA = Q / (Tw - Te)
+            @test hA ≈ hAo atol=1e-5
+        end
+    end
+
+    for Te in [15.0, 30.0]
+        for E in [0.5, 1.0, 2.0]
+            Eo = tempcorr(w, E, Te, To)
             Two = temperature(r, Eo/(g*I))
             Tw = temperature(r, E/(g*I))
             @test Eo/E ≈ (Two-To) / (Tw - Te) atol=1e-6
