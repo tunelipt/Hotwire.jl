@@ -1,4 +1,5 @@
 using Hotwire
+using Polynomials
 using Test
 
 @testset "Hotwire.jl" begin
@@ -169,6 +170,32 @@ using Test
             @test hA ≈ hAo atol=1e-5
         end
     end
+
+
+
+    # Testing calibration curve
+    Rw = Thermistor(5e3, 3500, 25.0);
+    cta = CTASensor(Rw, 100.0, 20/120);
+
+    E = [0.979, 1.333, 1.385, 1.423, 1.48, 1.521, 1.551, 1.575, 1.624]
+    T0 = 20.0
+    coefs = [2527.0, -3916.0, -1548.0, 6110.0, -3945.0, 815.0]
+    fit = Polynomial(coefs)
+    U = fit.(E)
+    U[1] = 0.0
+
+    cal = CalibrCurve(cta, U, E, T0, 5)
     
+    @test cal.Emin == E[2]
+    @test cal.T0 == T0
+    @test all(cal.fit.coeffs .≈ coefs)
+    A = sqrt(E[1])
+    B = (E[2]^2 - A) / sqrt(U[2])
+    @test cal.king[1] ≈ A
+    @test cal.king[2] ≈ B
+    @test cal.king[3] == 0.5
+    
+    
+
     
 end

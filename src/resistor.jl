@@ -14,7 +14,7 @@ R = R₀ (1 + α (T - T₀))
 **IMPORTANT** In the constructor, coefficient `α` is a *percentage*
  linear. 
 
-# Exemples
+# Examples
 
 ```jldoctest
 julia> R = Resistor(1e3, 0.01)
