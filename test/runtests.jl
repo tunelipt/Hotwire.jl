@@ -194,8 +194,9 @@ using Test
     @test cal.king[1] ≈ A
     @test cal.king[2] ≈ B
     @test cal.king[3] == 0.5
-    
-    
+
+    # Test the application of the calibration curve
+    @test all(cal.(E) .≈ U)
 
     
 end
