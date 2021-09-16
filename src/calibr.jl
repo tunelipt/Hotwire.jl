@@ -2,11 +2,15 @@ using CurveFit
 using Polynomials
 using Statistics
 
-struct CalibrCurve{CTA<:Hotwire.AbstractThermalAnemometer}
+
+
+
+    
+struct CalibrCurve{CTA<:Hotwire.AbstractThermalAnemometer, Fit}
     "Sensor information"
     sensor::CTA
     "Polynomial fitting the calibration curve"
-    fit::Polynomial{Float64}
+    fit::Fit
     "Reference temperature of the calibration"
     T0::Float64
     "Parameters for King's law extrapolation for low speeds"
@@ -90,6 +94,88 @@ function CalibrCurve(sensor::CTA, V, E, temp, N=5) where{CTA<:Hotwire.AbstractTh
     
 end
 
+struct ExtrapolateFit{Fit}
+    "A curve fit object obtained during calibration"
+    fit::Fit
+    "Minimum output WITH velocity"
+    E0::Float64
+    "King's law A coefficient"
+    A::Float64
+    "King's law B coefficient"
+    B::Float64
+    "King's law n coefficient"
+    n::Float64
+end
+
+"""
+    `efit = ExtrapolateFit(fit, Ea, Eb)`
+
+For very low speeds, the behavior of thermal anemometers change 
+as natural convection begins to dominate the heat transfer from the probe.
+Most calibrations reach has a nonzero minimum velocity. This function
+extrapolates the calibration curve to zero.
+
+It uses the calibration point with lowest speed and its derivative. 
+It also uses the output at 0 velocity as a data point.
+
+With these information, a King's law is fitted. Notice that the zero
+velocity point is unstable since any air current whatsoever will enhance
+heat transfer. 
+
+The following curve will be used to approximate the low speeds:
+
+``
+E² = A + B⋅Uⁿ
+``
+
+Arguments:
+
+ - `fit` curve fit obtained from calibration
+ - `Ea`  Anemometer output for 0 velocity
+ - `Eb` Anemometer output for minimum calibration velocity
+
+**Returns**: An `ExtrapolateFit` object 
+
+"""
+function ExtrapolateFit(fit::Fit, Ea, Eb) where {Fit}
+
+    Ua = 0.0
+    Ub = fit(Eb)
+    f = eps(Eb) * 1e7
+    Eb1 = Eb + f
+    Eb0 = Eb - f
+    Ub1 = fit(Eb1)
+    Ub0 = fit(Eb0)
+    dE² = ( (Eb1 - Eb0) / (Ub1 - Ub0) ) * (Eb1 + Eb0)
+    A = Ea*Ea
+    n = Ub * dE² / (Eb*Eb - A)
+
+    B = (Eb*Eb-A)/Ub^n
+
+    return ExtrapolateFit(fit, Eb, A, B, n)
+end
+
+
+
+"""
+    `fit(E)`
+
+Uses an `ExtrapolateFit` object as a function call.
+
+If E > fit.E0, use the original fit. Otherwise use the extrapolation.
+"""
+function (fit::ExtrapolateFit)(E)
+    if E < fit.E0
+        E2 = E*E
+        if E2 < fit.A
+            return zero(E)
+        else
+            return ((E2 - A) / fit.B)^(1/fit.n)
+        end
+    else
+        return fit.fit(E)
+    end
+end
 
 """
     U = cal(E [,temp])
