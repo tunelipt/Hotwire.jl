@@ -3,24 +3,23 @@ using Polynomials
 using Statistics
 
 
+abstract type AbstractCalibr end
+abstract type AbstractCalibr1d end
 
-
-    
-struct CalibrCurve{CTA<:Hotwire.AbstractThermalAnemometer, Fit}
-    "Sensor information"
-    sensor::CTA
+struct CalibrCurve{Fit} <: AbstractCalibr1d
+    "Anemometer calibration output"
+    E::Vector{Float64}
+    "Calibration Velocity"
+    U::Vector{Float64}
     "Polynomial fitting the calibration curve"
     fit::Fit
     "Reference temperature of the calibration"
     T0::Float64
-    "Parameters for King's law extrapolation for low speeds"
-    king::NTuple{3, Float64}
-    "Minimum output voltage with nonzero calibration speed"
-    Emin::Float64
 end
+Base.broadcastable(cal::CalibrCurve) = Ref(cal)
 
 """
-    cal = CalibrCurve(sensor, V, E, temp, N)
+    cal = calibr_curve(sensor, V, E, temp, N)
 
 Create a calibration for a thermal anemometer
 
@@ -66,31 +65,31 @@ julia>
 
 ```
 """
-function CalibrCurve(sensor::CTA, V, E, temp, N=5) where{CTA<:Hotwire.AbstractThermalAnemometer}
+function calibr_curve(sensor::CTA, V, E, temp, N=5; extrapolate=true) where{CTA<:Hotwire.AbstractThermalAnemometer}
     
     nz = V .> 0  # Points with velocity above zero 
     Tm = mean(temp)
    
     # Correct output to reference temperature
     Ec = tempcorr.(Ref(sensor), E, temp, Tm)
-        
+    Uc = [u for u in V]
+    
     V1 = V[nz]
     E1 = Ec[nz]
 
     # Fit the nonzero velocities to a polynomial of degree N
     fit = curve_fit(Polynomial, E1, V1, N)
 
-    # Now if the speed is lower than te minimum calibration speed, attempt to
-    # extrapolate using King's law: E^2 = A + B + U^n
-    # For now, n=0.5
-    Ea = mean(Ec[.!nz])
-    Eb = minimum(E1)
-    Vb = fit.(Eb)
-    
-    A = sqrt(Ea)
-    B = (Eb^2 - A) / sqrt(Vb)
-    
-    return CalibrCurve(sensor, fit, Tm, (A, B, 0.5), Eb)
+    if extrapolate
+        # Now if the speed is lower than te minimum calibration speed,
+        # attempt to extrapolate using King's law: E^2 = A + B + U^n
+        Ea = minimum(Ec[.!nz])
+        Eb = minimum(E1)
+        efit = ExtrapolateFit(fit, Ea, Eb)
+        return CalibrCurve(Ec, Uc, efit, Tm)
+    else
+        return CalibrCurve(Ec, Uc, fit, Tm)
+    end
     
 end
 
@@ -154,6 +153,7 @@ function ExtrapolateFit(fit::Fit, Ea, Eb) where {Fit}
 
     return ExtrapolateFit(fit, Eb, A, B, n)
 end
+Base.broadcastable(fit::ExtrapolateFit) = Ref(cal)
 
 
 
@@ -170,7 +170,7 @@ function (fit::ExtrapolateFit)(E)
         if E2 < fit.A
             return zero(E)
         else
-            return ((E2 - A) / fit.B)^(1/fit.n)
+            return ((E2 - fit.A) / fit.B)^(1/fit.n)
         end
     else
         return fit.fit(E)
@@ -178,49 +178,37 @@ function (fit::ExtrapolateFit)(E)
 end
 
 """
-    U = cal(E [,temp])
+    `U = cal(sensor, E [,temp])`
 
 Apply the calibration to obtain wind speed.
 
 Parameters:
+ * `sensor` Structure representing the anemometer
  * `E` Output voltage
  * `temp` fluid temperature. If not provided assume calibration temperature
  * Returns velocity
 
 # Examples
 ```jldoctest
-julia> cal(1.5)
+julia> cal(w, 1.5)
 6.925627034695708
 
-julia> cal(1.5, 15)
+julia> cal(w, 1.5, 15)
 5.902143445069172
 
-julia> cal(1.5, 20)
+julia> cal(w, 1.5, 20)
 6.9642311432613395
 
-julia> cal(1.5, 25)
+julia> cal(w, 1.5, 25)
 8.309847269677324
 
 ```
 
 """
-function (cal::CalibrCurve)(E, temp)
-    Ec = tempcorr(cal.sensor, E, temp, cal.T0)
+function (cal::CalibrCurve)(sensor, E, temp)
+    Ec = tempcorr(sensor, E, temp, cal.T0)
     
-    if Ec < cal.Emin
-        A = cal.king[1]
-        B = cal.king[2]
-        n = cal.king[3]
-        if Ec < sqrt(A)
-            U = zero(E)
-        else
-            U = ( (Ec^2 - A) / B ) ^ (1/n)
-        end
-    else
-        U = cal.fit.(Ec)
-    end
-    
-    return U
+    return cal.fit(Ec)
 end
 
-(cal::CalibrCurve)(E) = cal(E, cal.T0)
+(cal::CalibrCurve)(sensor, E) = cal(sensor, E, cal.T0)

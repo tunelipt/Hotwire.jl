@@ -49,6 +49,7 @@ struct Resistor <: AbstractResistor
     T₀::Float64
     Resistor(R₀=1e3, α=0.0, T₀=20.0) = new(R₀, α, T₀)
 end
+Base.broadcastable(R::Resistor) = Ref(R)
 
 
 
@@ -105,6 +106,7 @@ struct Thermistor <: AbstractResistor
     T₀::Float64
     Thermistor(R₀=5e3, B=0.0, T₀=25.0) = new(R₀, B, T₀+273.15)
 end
+Base.broadcastable(R::Thermistor) = Ref(R)
 
 
 

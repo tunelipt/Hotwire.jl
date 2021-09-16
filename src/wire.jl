@@ -29,6 +29,7 @@ struct CTASensor{ResType <: AbstractResistor} <: AbstractThermalAnemometer
     gain::Float64
     
 end
+Base.broadcastable(sensor::CTASensor) = Ref(sensor)
 
 CTASensor(R::ResType, Rw; gain=1.0) where {ResType <: AbstractResistor} = CTASensor(R, Rw, temperature(R), gain)
 
@@ -75,6 +76,7 @@ struct CCASensor{ResType <: AbstractResistor} <: AbstractThermalAnemometer
     gain::Float64
 end
 CCASensor(R::ResType, I; gain=1.0) where {ResType <: AbstractResistor} = CCASensor(R,I,gain)
+Base.broadcastable(sensor::CCASensor) = Ref(sensor)
 
 "Current in A flowing through the CCA"
 current(w::CCASensor) = w.I
