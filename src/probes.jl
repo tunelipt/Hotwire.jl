@@ -115,8 +115,34 @@ end
 (anem::Probe1d)(E, temp) = anem.cal(anem.sensor, E, temp)
 (anem::Probe1d)(E) = anem.cal(anem.sensor, E, anem.cal.T0)
 
+mutable struct Probe2d{Anem<:AbstractThermalAnemometer,Calibr} <: AbstractProbe2d
+    "Probe model"
+    model::String
+    "Probe tag"
+    tag::String
+    "Probe leads resistance"
+    RL::NTuple{2,Float64}
+    "Sensor information"
+    sensor::NTuple{2,Anem}
+    "Sensor calibration"
+    cal::NTuple{2,Calibr}
+    "k² directional calibration for each sensor"
+    k²::NTuple{2,Float64}
+    "h² directional calibration for each sensor"
+    h²::NTuple{2,FLoat64}
+    "Matrix with the cosine of each wire with respect to x, y and z axes"
+    cosϕ::Matrix{Float64}
+    "Hardware information"
+    bridge::NTuple{2,HWBridge}
+    "Probe support"
+    support::HWSupport
+    "Connecting cable"
+    cable::NTuple{2,HWCable}
+    
+end
 
-mutable struct Probe3d{Anem<:AbstractThermalAnemometer,Calibr} <: AbstractProbe1d
+
+mutable struct Probe3d{Anem<:AbstractThermalAnemometer,Calibr} <: AbstractProbe3d
     "Probe model"
     model::String
     "Probe tag"
