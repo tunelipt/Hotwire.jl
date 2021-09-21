@@ -142,6 +142,43 @@ end
 (anem::Probe1d)(E, temp) = anem.cal(anem.sensor, E, temp)
 (anem::Probe1d)(E) = anem.cal(anem.sensor, E, anem.cal.T0)
 
+
+"""
+    `velocity!(anem, E, T, 1)`
+
+Calculate, in place, the velocity from an anemometer. In this function, 
+the input is an abstract array where 1 column with the bridge output is given by argument `idx` represent the output of the anemometer. A unique temperature should be used.
+
+"""
+function velocity!(anem::Probe1d, E::AbstractMatrix, T, idx=1)
+
+    npts = size(E,1)
+    for i in 1:npts
+        U = anem(E[i,idx], T])
+        E[i,idx] = U
+    end
+end
+
+    
+"""
+    `velocity(anem, E, T, 1)`
+
+Calculate the velocity from an anemometer. In this function, 
+the input is an abstract array where 1 column with the bridge output is given by argument `idx` represent the output of anemometer. A unique temperature should be used
+
+"""
+function velocity(anem::Probe1d, E::AbstractMatrix, T, idx=1)
+
+    npts = size(E,1)
+    U = zeros(npts)
+    for i in 1:npts
+        U[i] = anem(E[i,idx], T])
+    end
+    return U
+end
+
+    
+
 mutable struct Probe2d{Anem<:AbstractThermalAnemometer,Calibr} <: AbstractProbe2d
     "Sensor information"
     sensor::NTuple{2,Anem}
@@ -271,17 +308,33 @@ function (anem::Probe3d)(E₁, E₂, E₃, T)
             -U1*anem.cosϕ[1,3] - U2*anem.cosϕ[2,3] - U3*anem.cosϕ[3,3])
 end
 
+
+"""
+    `velocity!(anem, E, T, 1:3)`
+
+Calculate, in place, the velocity from an anemometer. In this function, 
+the input is an abstract array where 3 columns given by argument `idx` 
+represent the output of each anemometer. A unique temperature should be 
+used
+
+"""
 function velocity!(anem::Probe3d, E::AbstractMatrix, T, idx=1:3)
 
     npts = size(E,1)
     for i in 1:npts
-        U, V, W = anem(E[i,idx[1]], E[i,idx[2]], E[i,idx[3]])
+        U, V, W = anem(E[i,idx[1]], E[i,idx[2]], E[i,idx[3]], T)
         E[i,idx[1]], E[i,idx[2]], E[i,idx[3]] = U, V, W
     end
 
 end
 
+"""
+    `velocity(anem, E, T, 1:3)`
 
+Velocity calculation for arrays. A new array where each column represents
+a component of the velocity is created
+
+"""
 function velocity(anem::Probe3d, E::AbstractMatrix, T, idx=1:3)
     npts = size(E,1)
     
