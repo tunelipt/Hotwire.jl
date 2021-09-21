@@ -36,7 +36,7 @@ CTASensor(R::ResType, Rw; gain=1.0) where {ResType <: AbstractResistor} = CTASen
 CTASensor(R::ResType, Rw, T₀; gain=1.0) where {ResType <: AbstractResistor} = CTASensor(R, Rw, T₀, gain)
 
 
-Wire(R₀, Rw, T₀=20.0, α=0.36, gain=1.0) = CTASensor(Resistor(R₀, α, T₀), Rw; gain=gain)
+Wire(R₀, Rw, T₀=20.0, α=0.36e-3, gain=1.0) = CTASensor(Resistor(R₀, α, T₀), Rw; gain=gain)
 
 "Operating temperature of the CTA"
 optemperature(w::CTASensor) = temperature(w.R, w.Rw)

@@ -54,7 +54,6 @@ could be useful.
 """
 HWCable(;model="A1863 - 50Ω impedance", tag="", R=0.2, L=4.0, conn=("BNC", "BNC")) = HWCable(model, tag, R, L, conn)
 
-
 struct HWBridge
     "Anemometer system model"
     model::String
@@ -77,7 +76,7 @@ struct HWBridge
     "Cable compensation"
     cablecomp::Int
     "Cooling interval"
-    coolinterv=Float64
+    coolinterv::Float64
 end
 
 """
@@ -242,12 +241,12 @@ function Probe3d(sensor, cal, k², h²; ϕ=[125.264 45 114.094;
     c2e = SVector{3,Float64}( (1.0 + k²[1] + h²[1])*cosϕ[1,1]^2,
                               (1.0 + k²[2] + h²[2])*cosϕ[2,1]^2,
                               (1.0 + k²[3] + h²[3])*cosϕ[3,1]^2 )
-    A = SMatrix{3,3,Float64}([k²[1] 1      h²[1];
-                              h²[2] k²[2]  1;
-                              1     h²[3]  k²[3]])
+    A = SMatrix{3,3,Float64}([k²[1] 1.0      h²[1];
+                              h²[2] k²[2]    1.0;
+                              1.0   h²[3]  k²[3]])
     return Probe3d((sensor[1], sensor[2], sensor[3]),
                    (cal[1], cal[2], cal[3]), (k²[1], k²[2], k²[3]),
-                   (h²[1], h²[2], h²[3]), cosϕ, model, tag, RL,
+                   (h²[1], h²[2], h²[3]), cosϕ, model, tag, (RL,RL,RL),
                    c2e, inv(A), (bridge[1],bridge[2],bridge[3]),
                    support, (cable[1],cable[2],cable[3]))
 end
@@ -256,20 +255,20 @@ function (anem::Probe3d)(E₁, E₂, E₃, T)
 
     # Calibration curve and temperature correction for
     # each sensor and calculation of effective velocity for each wire
-    Uᵉ = SVector(anem.cal[1](anem.sensor[1], E₁, T)^2 * c2e[1], 
-                 anem.cal[1](anem.sensor[1], E₂, T)^2 * c2e[2], 
-                 anem.cal[1](anem.sensor[1], E₃, T)^2 * c2e[3])
+    Uᵉ = SVector(anem.cal[1](anem.sensor[1], E₁, T)^2 * anem.c2e[1], 
+                 anem.cal[2](anem.sensor[2], E₂, T)^2 * anem.c2e[2], 
+                 anem.cal[3](anem.sensor[3], E₃, T)^2 * anem.c2e[3])
     
     # Calculate speed in wire coordinates
-    Uʷ = A * Uᵉ
+    Uʷ = anem.A * Uᵉ
     
     U1 = sqrt(max(Uʷ[1], 0.0))
     U2 = sqrt(max(Uʷ[2], 0.0))
     U3 = sqrt(max(Uʷ[3], 0.0))
     
-    return (-U1*cosϕ[1,1] - U2*cosϕ[1,2] - U3*cosϕ[1,3],
-            -U1*cosϕ[2,1] - U2*cosϕ[2,2] - U3*cosϕ[2,3],
-            -U1*cosϕ[3,1] - U2*cosϕ[3,2] - U3*cosϕ[3,3])
+    return (-U1*anem.cosϕ[1,1] - U2*anem.cosϕ[2,1] - U3*anem.cosϕ[3,1],
+            -U1*anem.cosϕ[1,2] - U2*anem.cosϕ[2,2] - U3*anem.cosϕ[3,2],
+            -U1*anem.cosϕ[1,3] - U2*anem.cosϕ[2,3] - U3*anem.cosϕ[3,3])
 end
 
 function velocity!(anem::Probe3d, E::AbstractMatrix, T, idx=1:3)
