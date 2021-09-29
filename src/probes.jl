@@ -154,7 +154,7 @@ function velocity!(anem::Probe1d, E::AbstractMatrix, T, idx=1)
 
     npts = size(E,1)
     for i in 1:npts
-        U = anem(E[i,idx], T])
+        U = anem(E[i,idx], T)
         E[i,idx] = U
     end
 end
@@ -172,7 +172,7 @@ function velocity(anem::Probe1d, E::AbstractMatrix, T, idx=1)
     npts = size(E,1)
     U = zeros(npts)
     for i in 1:npts
-        U[i] = anem(E[i,idx], T])
+        U[i] = anem(E[i,idx], T)
     end
     return U
 end
