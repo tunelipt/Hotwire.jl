@@ -155,8 +155,6 @@ function ExtrapolateFit(fit::Fit, Ea, Eb) where {Fit}
 end
 Base.broadcastable(fit::ExtrapolateFit) = Ref(cal)
 
-
-
 """
     `fit(E)`
 
@@ -176,6 +174,74 @@ function (fit::ExtrapolateFit)(E)
         return fit.fit(E)
     end
 end
+
+
+"""
+    `BlendFit(fit₁, fit₂, E₁, E₂)`
+
+Blend two curve fits together.
+The approximation `fit₁` is used for ``E < E₁`` and
+`fit₂` is used for ``E > E₂``. For intermediary values, 
+a linear blending is used
+
+"""
+struct BlendFit{Fit₁,Fit₂}
+    "Fit for lower speeds"
+    fit₁::Fit₁
+    "Fit for higher speeds"
+    fit₂::Fit₂
+    "Lower threshold"
+    E₁::Float64
+    "Higher threshold"
+    E₂::Float64
+end
+Base.broadcastable(fit::BlendFit) = Ref(cal)
+
+"""
+    `fit(E)`
+
+Calculates the blended fit
+"""
+function (fit::BlendFit)(E)
+    if E < fit.E₁
+        return fit.fit₁(E)
+    elseif E > fit.E₂
+        return fit.fit₂(E)
+    else
+        u₁ =  fit.fit₁(E)
+        u₂ = fit.fit₂(E)
+        ΔE = fit.E₂ - fit.E₁
+        return u₁ * (fit.E₂-E) / ΔE + u₂*(E - fit.E₁)/ΔE
+    end
+end
+
+
+struct HWKingFit
+    A::Float64
+    B::Float64
+    n::Float64
+end
+Base.broadcastable(fit::HWKingFit) = Ref(cal)
+
+function HWKingFit(E::AbstractVector, U::AbstractVector, ϵ=1e-8, maxiter=200)
+
+    A, B, n = king_fit(E, U, ϵ, maxiter)
+
+    return HWKingFit(A, B, n)
+end
+
+function (fit::HWKingFit)(E)
+
+    E² = E*E
+    if E² < fit.A
+        return zero(E)
+    else
+        return (  (E²-fit.A) / fit.B )^(1/fit.n)
+    end
+end
+
+    
+
 
 """
     `U = cal(sensor, E [,temp])`
