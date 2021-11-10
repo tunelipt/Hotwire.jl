@@ -6,67 +6,67 @@ using Test
 @testset "Hotwire.jl" begin
 
     # Resistance
-    r = Resistor(1e3, 0.0, 20.0)
+    r = Resistor(1e3, 0.0, 298.15)
 
     @test resistance(r) == 1e3
-    @test resistance(r, 20.0) == 1e3
+    @test resistance(r, 298.15) == 1e3
 
-    r = Resistor(1e3, 0.01, 20.0)
-    @test resistance(r, 20.0) == 1e3
-    @test resistance(r, 21.0) == 1.01e3
+    r = Resistor(1e3, 0.01, 298.15)
+    @test resistance(r, 298.15) == 1e3
+    @test resistance(r, 299.15) == 1.01e3
 
-    @test temperature(r, 1010.0) == 21.0
+    @test temperature(r, 1010.0) == 299.15
 
     # Thermistor
-    r = Thermistor(1e3, 0.0, 25.0)
+    r = Thermistor(1e3, 0.0, 298.15)
     @test resistance(r) == 1e3
-    @test resistance(r, 30.0) == 1e3
+    @test resistance(r, 303.15) == 1e3
 
-    r = Thermistor(1e3, 3300.0, 25.0)
-    @test temperature(r, resistance(r, 50.0)) ≈ 50.0
-    @test temperature(r, resistance(r, 100.0)) ≈ 100.0
+    r = Thermistor(1e3, 3300.0, 298.15)
+    @test temperature(r, resistance(r, 50.0+273.15)) ≈ 50.0+273.15
+    @test temperature(r, resistance(r, 100.0+273.15)) ≈ 100.0+273.15
 
     @test 100.0 ≈ resistance(r, temperature(r, 100.0))
 
 
     # CTASensor
 
-    r = Resistor(1.0, 0.01, 0.0)
+    r = Resistor(1.0, 0.01, 300.0)
     w = CTASensor(r, 2.0)
     @test r == resistor(w)
-    @test optemperature(w) ≈ 100.0
+    @test optemperature(w) ≈ 400.0
     @test overtemp(w) ≈ 100.0
     @test overheat_ratio(w) ≈ 1.0
 
-    w1 = Wire(1.0, 2.0, 0.0, 0.01)
+    w1 = Wire(1.0, 2.0, 300.0, 0.01)
     @test w == w1
     
-    r = Thermistor(1e3, 3300, 25.0)
+    r = Thermistor(1e3, 3300, 25.0+273.15)
     Rw = 100.0
     w = CTASensor(r, Rw)
     Tw = temperature(r, Rw)
     a = Rw/1e3 - 1.0
     @test r == resistor(w)
     @test optemperature(w) ≈ Tw
-    @test overtemp(w) ≈ Tw - 25.0
+    @test overtemp(w) ≈ Tw - 298.15
     @test overheat_ratio(w) ≈ a
 
     # CCASensor - not much to do
-    r = Resistor(1.0, 0.01, 0.0)
+    r = Resistor(1.0, 0.01, 300.0)
     w = CCASensor(r, 1.0)
     @test resistor(w) == r
     @test current(w) == 1.0
 
     # tempcorr.jl
     # tempcorr(CTASensor)
-    Too = 20.0
+    Too = 20.0+273.15
     r = Resistor(3.5, 0.0036, Too)
     w = CTASensor(r, 5.5)
     @test 1.0 ≈ tempcorr(w, 1.0, Too) # No temperature correction
-    @test tempcorr(w, 1.0, 25.0) > 1.0 # Increased temperature -> lower anemometer output
-    @test tempcorr(w, 1.0, 15.0) < 1.0 # Decreased temperature -> higher anemometer output
+    @test tempcorr(w, 1.0, 25.0+273.15) > 1.0 # Increased temperature -> lower anemometer output
+    @test tempcorr(w, 1.0, 15.0+273.15) < 1.0 # Decreased temperature -> higher anemometer output
     E1 = 1.0
-    Too1 = 25.0
+    Too1 = 25.0+273.15
     E = tempcorr(w, E1, Too1)
     Tw = optemperature(w)
     @test E/E1 ≈ sqrt( (Tw - Too) / (Tw - Too1) )
@@ -74,27 +74,27 @@ using Test
     
     r = Thermistor(1e3, 3300, Too)
     w = CTASensor(r, 10.0)
-    @test 1.0 ≈ tempcorr(w, 1.0, 20.0) # No temperature correction
-    @test tempcorr(w, 1.0, 25.0) > 1.0 # Increased temperature -> lower anemometer output
-    @test tempcorr(w, 1.0, 15.0) < 1.0 # Decreased temperature -> higher anemometer output
+    @test 1.0 ≈ tempcorr(w, 1.0, 20.0+273.15) # No temperature correction
+    @test tempcorr(w, 1.0, 25.0+273.15) > 1.0 # Increased temperature -> lower anemometer output
+    @test tempcorr(w, 1.0, 15.0+273.15) < 1.0 # Decreased temperature -> higher anemometer output
     E1 = 1.0
-    Too1 = 25.0
+    Too1 = 25.0+273.15
     E = tempcorr(w, E1, Too1)
     Tw = optemperature(w)
     @test E/E1 ≈ sqrt( (Tw - Too) / (Tw - Too1) )
 
     @test 1.0 ≈ tempcorr(w, 1.0, Too, Too)
-    @test tempcorr(w, 1.0, 25.0, Too) > 1.0
-    @test tempcorr(w, 1.0, 15.0, Too) < 1.0
+    @test tempcorr(w, 1.0, 25.0+273.15, Too) > 1.0
+    @test tempcorr(w, 1.0, 15.0+273.15, Too) < 1.0
     E = tempcorr(w, E1, Too1, Too)
     Tw = optemperature(w)
     @test E/E1 ≈ sqrt( (Tw - Too) / (Tw - Too1) )
     
     
     # tempcorr(CCASensor)
-    To = 20.0
+    To = 20.0+273.15
     r = Resistor(3.5, 0.0036, To)
-    Two = 100.0
+    Two = 100.0+273.15
 
     Rwo = resistance(r, Two)
     I = 0.2
@@ -107,7 +107,7 @@ using Test
     @test tempcorr(w, Eo, To) ≈ Eo
     @test tempcorr(w, Eo, To, To) ≈ Eo
     
-    Te = 30.0
+    Te = 30.0+273.15
     E = Eo
     Eo = tempcorr(w, E, Te)
     Two = temperature(r, Eo/(g*I))
@@ -120,7 +120,7 @@ using Test
     @test hA ≈ hAo
 
 
-    Te = 30.0
+    Te = 30.0+273.15
     E = Eo
     Eo = tempcorr(w, E, Te, temperature(w.R))
     Two = temperature(r, Eo/(g*I))
@@ -137,14 +137,14 @@ using Test
     @test Hotwire.funroot(x->sin(x), π*1.1, π*1.02) ≈ π atol=1e-4
 
     # Testing tempcorr for CCASensor{Thermistor}
-    To = 20.0
+    To = 20.0+273.15
     r = Thermistor(1e3, 3300, To)
     g = 1.0
     I = 0.2
     w = CCASensor(r, I, g)
     @test tempcorr(w, 1.0, To) ≈ 1.0
 
-    for Te in [15.0, 30.0]
+    for Te in [15.0, 30.0] .+ 273.15
         for E in [0.5, 1.0, 2.0]
             Eo = tempcorr(w, E, Te)
             Two = temperature(r, Eo/(g*I))
@@ -158,7 +158,7 @@ using Test
         end
     end
 
-    for Te in [15.0, 30.0]
+    for Te in [15.0, 30.0] .+ 273.15
         for E in [0.5, 1.0, 2.0]
             Eo = tempcorr(w, E, Te, To)
             Two = temperature(r, Eo/(g*I))
@@ -175,12 +175,12 @@ using Test
 
 
     # Testing calibration curve
-    Rw = Thermistor(5e3, 3500, 25.0);
+    Rw = Thermistor(5e3, 3500, 25.0+273.15);
     cta = CTASensor(Rw, 100.0, 20/120);
 
     
     E = [1.333, 1.385, 1.423, 1.48, 1.521, 1.551, 1.575, 1.624]
-    T0 = 20.0
+    T0 = 20.0+273.15
     coefs = [2527.0, -3916.0, -1548.0, 6110.0, -3945.0, 815.0]
     fit = Polynomial(coefs)
     U = fit.(E)
@@ -188,7 +188,7 @@ using Test
     cal = calibr_curve(cta, U, E, T0, 5, extrapolate=false)
     
     @test cal.T0 == T0
-    @test all(cal.fit.coeffs .≈ coefs)
+    @test cal.fit.coeffs ≈ coefs rtol=1e-4
     @test all(cal.(cta, E) .≈ U)
 
     U = 1.0:0.5:10.0
@@ -214,7 +214,7 @@ using Test
     h² = (1.0, 1.0, 1.0)
 
     U = collect(1.0:0.5:10.0)
-    T0 = 20.0
+    T0 = 20.0+273.15
     E1 = sqrt.(2.0 .+ 0.7 .* U .^ 0.42)
     E2 = sqrt.(2.2 .+ 0.65 .* U .^ 0.42)
     E3 = sqrt.(1.95 .+ 0.75 .* U .^ 0.41)

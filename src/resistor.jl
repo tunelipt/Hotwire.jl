@@ -3,7 +3,7 @@
 abstract type AbstractResistor end
 
 """
-    r = Resistor(R0=1e3, α=0.0, T₀=20.0)
+    r = Resistor(R0=1e3, α=0.0, T₀=293.15)
 
 A resistor with resistance varying linearly with temperature:
 
@@ -11,29 +11,29 @@ A resistor with resistance varying linearly with temperature:
 R = R₀ (1 + α (T - T₀))
 ```
 
-**IMPORTANT** In the constructor, coefficient `α` is a *percentage*
+**IMPORTANT** In the constructor, coefficient `α` is a *fraction*, not percentage.
  linear. 
 
 # Examples
 
 ```jldoctest
 julia> R = Resistor(1e3, 0.01)
-THW.Resistor(1000.0, 0.0001, 20.0)
+THW.Resistor(1000.0, 0.0001, 293.15)
 
 julia> resistance(R)
 1000.0
 
-julia> resistance(R, 120)
+julia> resistance(R, 120+273.15)
 1010.0
 
 julia> R()
 1000.0
 
-julia> R(120)
+julia> R(120+273.15)
 1010.0
 
 julia> temperature(R)
-20.0
+293.15
 
 julia> temperature(R, 1010)
 120.00000000000009
@@ -41,13 +41,13 @@ julia> temperature(R, 1010)
 ```
 """
 struct Resistor <: AbstractResistor
-    "Resistance at reference temperature"
+    "Resistance at reference temperature (Ω)"
     R₀::Float64
     "Linear resistance coefficient"
     α::Float64
-    "Reference temperature"
+    "Reference temperature (K)"
     T₀::Float64
-    Resistor(R₀=1e3, α=0.0, T₀=20.0) = new(R₀, α, T₀)
+    Resistor(R₀=1e3, α=0.0, T₀=293.15) = new(R₀, α, T₀)
 end
 Base.broadcastable(R::Resistor) = Ref(R)
 
@@ -57,7 +57,7 @@ Base.broadcastable(R::Resistor) = Ref(R)
 """
     R = Thermistor(R₀, B, T₀)
 
-Models a NTC thermistor. In the constructor, `R0` is the resistance of the thermistor at the reference temperature  `T₀`. For convenience, the temperature should be expressed in °C, but it is stored in K. `B` is a coefficient that characterizes the temperature dependence of the thermistor. In the model used her, the resistance varies with temperature according to the following equation:
+Models a NTC thermistor. In the constructor, `R0` is the resistance of the thermistor at the reference temperature  `T₀`. For convenience, the temperature should be expressed in K. `B` is a coefficient that characterizes the temperature dependence of the thermistor. In the model used her, the resistance varies with temperature according to the following equation:
 
 ```math
 R = R₀ \\exp B \\left(\\frac{1}{T₀} - \\frac{1}{T}\\right)
@@ -73,26 +73,26 @@ where
 
 # Examples
 ```jldoctest
-julia> R = Thermistor(5e3, 3200, 20) # Create an object `Thermistor`
+julia> R = Thermistor(5e3, 3200, 293.15) # Create an object `Thermistor`
 Thermistor(5000.0, 3200.0, 293.15)
 
 julia> resistance(R) # Resistance at the reference temperature
 5000.0
 
-julia> resistance(R, 25) # Resistance at 25°C
+julia> resistance(R, 298.15) # Resistance at 25°C
 4163.587774917559
 
 julia> R() # The same as resistance(R)
 5000.0
 
-julia> R(25) # The same as resistance(R, 25)
+julia> R(298.15) # The same as resistance(R, 298.15)
 4163.587774917559
 
 julia> temperature(R)
-20.0
+293.15
 
 julia> temperature(R, 4163.588)
-24.999998498264233
+298.15
 
 ```
 
@@ -104,7 +104,7 @@ struct Thermistor <: AbstractResistor
     B::Float64
     "Reference temperature in K"
     T₀::Float64
-    Thermistor(R₀=5e3, B=0.0, T₀=25.0) = new(R₀, B, T₀+273.15)
+    Thermistor(R₀=5e3, B=0.0, T₀=25.0) = new(R₀, B, T₀)
 end
 Base.broadcastable(R::Thermistor) = Ref(R)
 
@@ -123,12 +123,12 @@ type `Resistor`, see [`Thermistor`](@ref).
 """
 resistance(r::AbstractResistor) = r.R₀
 resistance(r::Resistor, T) = r.R₀ * (1.0 + r.α * (T - r.T₀))
-resistance(th::Thermistor, T) = th.R₀ * exp( -th.B * (1/th.T₀ - 1/(T+273.15) ) )
+resistance(th::Thermistor, T) = th.R₀ * exp( -th.B * (1/th.T₀ - 1/T ) )
 
 temperature(r::AbstractResistor) = r.T₀
 temperature(r::Resistor, R) = 1/r.α * (R/r.R₀ - 1.0) + r.T₀
-temperature(th::Thermistor, R) = 1/( 1/th.T₀ + 1/th.B * log(R/th.R₀) ) - 273.15
-temperature(th::Thermistor) = th.T₀ - 273.15
+temperature(th::Thermistor, R) = 1/( 1/th.T₀ + 1/th.B * log(R/th.R₀) ) 
+temperature(th::Thermistor) = th.T₀ 
 
 (th::Thermistor)(T) = resistance(th, T)
 (th::Thermistor)() = th.R₀
