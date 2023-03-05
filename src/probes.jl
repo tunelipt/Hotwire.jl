@@ -94,28 +94,17 @@ HWBridge(;model="Streamline", tag="", id=1, offset=0.0, gain=1.0,
                       bridgeratio, ampgain, filter, cablecomp,
                       coolinterv)
 
-mutable struct Probe1d{Anem<:AbstractThermalAnemometer,Calibr} <: AbstractProbe1d
+mutable struct Probe1d{Anem<:AbstractThermalAnemometer,Calibr,Setup} <: AbstractProbe1d
     "Anemometer sensor information"
     sensor::Anem
     "Calibration data"
     cal::Calibr
-    "Probe model"
-    model::String
-    "Probe tag"
-    tag::String
-    "Probe leads resistance"
-    RL::Float64
-    "Hardware information"
-    bridge::HWBridge
-    "Probe support"
-    support::HWSupport
-    "Connecting cable"
-    cable::HWCable
+    "Anemometer setup"
+    setup::Setup
 end
 
 """
-    `Probe1d(sensor, cal; model="model", tag="HW 1d", RL=0.5, 
-             bridge=HWBridge(), support=HWSupport(), cable=HWCable())`
+    `Probe1d(sensor, cal, setup)`
 
 Creates a 1d probe. This completely characterizes a 1d probe. It includes
 information on calibration, bridge configuration, output filter, etc.
@@ -124,18 +113,10 @@ information on calibration, bridge configuration, output filter, etc.
 
  - `sensor`: an `AbstractThermalAnemometer` object
  - `cal`: `CalibrCurve` object
- - `model`: Probe model
- - `tag`: Probe id tag
- - `RL`: Lead resistance
- - `bridge`: Bridge configuration
- - `support`: `HWSupport` object specifying the probe support
- - `cable`: `HWCable` object with information on cable
 
 """
-function Probe1d(sensor, cal; model="", tag="", RL=0.5,
-                 bridge=HWBridge(id=1),
-                 support=HWSupport(), cable=HWCable())
-    return Probe1d(sensor, cal, model, tag, RL, bridge, support, cable)
+function Probe1d(sensor, cal, setup="")
+    return Probe1d(sensor, cal, setup)
 end
 
                                                         
@@ -179,7 +160,7 @@ end
 
     
 
-mutable struct Probe2d{Anem<:AbstractThermalAnemometer,Calibr} <: AbstractProbe2d
+mutable struct Probe2d{Anem<:AbstractThermalAnemometer,Calibr,Setup} <: AbstractProbe2d
     "Sensor information"
     sensor::NTuple{2,Anem}
     "Sensor calibration"
@@ -190,22 +171,11 @@ mutable struct Probe2d{Anem<:AbstractThermalAnemometer,Calibr} <: AbstractProbe2
     h²::NTuple{2,Float64}
     "Matrix with the cosine of each wire with respect to x, y and z axes"
     cosϕ::Matrix{Float64}
-    "Probe model"
-    model::String
-    "Probe tag"
-    tag::String
-    "Probe leads resistance"
-    RL::NTuple{2,Float64}
-    "Hardware information"
-    bridge::NTuple{2,HWBridge}
-    "Probe support"
-    support::HWSupport
-    "Connecting cable"
-    cable::NTuple{2,HWCable}
-    
+    "Anemometer setup"
+    setup::Setup
 end
 
-mutable struct Probe3d{Anem<:AbstractThermalAnemometer,Calibr} <: AbstractProbe3d
+mutable struct Probe3d{Anem<:AbstractThermalAnemometer,Calibr,Setup} <: AbstractProbe3d
     "Sensor information"
     sensor::NTuple{3,Anem}
     "Sensor calibration"
@@ -216,27 +186,16 @@ mutable struct Probe3d{Anem<:AbstractThermalAnemometer,Calibr} <: AbstractProbe3
     h²::NTuple{3,Float64}
     "Cosine of wire direction with respect to axes x, y and z"
     cosϕ::SMatrix{3,3,Float64,9}
-    "Probe model"
-    model::String
-    "Probe tag"
-    tag::String
-    "Probe leads resistance"
-    RL::NTuple{3,Float64}
+    "Anemometer setup"
+    setup::Setup
     "Factor to calculate effective velocity from calibration velocity"
     c2e::SVector{3,Float64}
     "Matrix to calculate velocity in wire coordinates from effective vel."
     A::SMatrix{3,3,Float64,9}
-    "Hardware information"
-    bridge::NTuple{3,HWBridge}
-    "Probe support"
-    support::HWSupport
-    "Connecting cable"
-    cable::NTuple{3,HWCable}
 end
 
 """
-    `Probe3d(sensor, cal, k², h²; ϕ=ϕ, model="model", tag="HW 1d", RL=0.5, 
-             bridge=br, support=su, cable=cc)`
+    `Probe3d(sensor, cal, k², h², sensor="")`
 
 Creates a 2d probe. This completely characterizes a 1d probe. It includes
 information on calibration, directional calibration, bridge configuration,
@@ -257,24 +216,15 @@ the x axis.
 
  - `sensor`: a tuple of `AbstractThermalAnemometer` objects (3)
  - `cal`: `CalibrCurve` object
- - `model`: Probe model
- - `tag`: Probe id tag
- - `RL`: Lead resistance
- - `bridge`: Bridge configuration
- - `support`: `HWSupport` object specifying the probe support
- - `cable`: `HWCable` object with information on cable
-
+ - `setup`: hardware/system  configuration
+ - `ang`: Angle that each wire makes with each coordinate axes
 """
-function Probe3d(sensor, cal, k², h²; ϕ=[125.264 45 114.094;
-                                         125.264 135 114.094;
-                                         125.264 90 35.264],
-                 model="55R91", tag="", RL=0.5,
-                 bridge=(HWBridge(), HWBridge(), HWBridge()),
-                 support=HWSupport(),
-                 cable=(HWCable(), HWCable(), HWCable()))
+function Probe3d(sensor, cal, k², h², setup=""; ang=[125.264 45 114.094;
+                                                   125.264 135 114.094;
+                                                   125.264 90 35.264])
 
     # Calculate the cosine of the angles
-    cosϕ = SMatrix{3,3,Float64}(cosd.(ϕ))
+    cosϕ = SMatrix{3,3,Float64}(cosd.(ang))
     c2e = SVector{3,Float64}( (1.0 + k²[1] + h²[1])*cosϕ[1,1]^2,
                               (1.0 + k²[2] + h²[2])*cosϕ[2,1]^2,
                               (1.0 + k²[3] + h²[3])*cosϕ[3,1]^2 )
