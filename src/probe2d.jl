@@ -29,6 +29,8 @@ function velocity(anem::Probe2d, E1, E2, T)
     return Ux, Uy
 end
 
+(anem::Probe2d)(E1, E2, T) = velocity(anem, E1, E2, T)
+(anem::Probe2d)(E1, E2) = velocity(anem, E1, E2, anem.cal[1].T0)
 
 import LinearAlgebra: dot
 
