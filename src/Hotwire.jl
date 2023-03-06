@@ -18,4 +18,5 @@ include("wire.jl")
 include("tempcorr.jl")
 include("probes.jl")
 include("calibr.jl")
+include("hardware.jl")
 end # module
