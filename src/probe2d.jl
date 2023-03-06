@@ -34,6 +34,23 @@ end
 
 import LinearAlgebra: dot
 
+"""
+`dircalibr(anem::Probe2d, ang, Uc, Uc1, Uc2)`
+
+Perform directional calibration of a 2d probe (X wire).
+
+### Arguments
+
+ * `anem`: a 2d probe object
+ * `ang`: Directional calibration angle in degrees
+ * `Uc`: Directional calibration *constant* velocity
+ * `Uc1`: probe velocity calibration output for wire 1
+ * `Uc2`: probe velocity calibration output for wire 2
+
+### Returns
+
+Coefficients `k₁²` and `k₂²` as a tuple.
+"""
 function dircalibr(anem::Probe2d, ang, Uc, Uc1, Uc2)
     
     A = @. (cosd(ang) + sind(ang))^2

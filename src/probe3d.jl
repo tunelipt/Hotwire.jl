@@ -3,10 +3,8 @@ mutable struct Probe3d{Anem<:AbstractThermalAnemometer,Calibr,Setup} <: Abstract
     sensor::NTuple{3,Anem}
     "Sensor calibration"
     cal::NTuple{3,Calibr}
-    "k² directional calibration for each sensor"
-    k²::NTuple{3,Float64}
-    "h² directional calibration for each sensor"
-    h²::NTuple{3,Float64}
+    "Matrix with h² and k² for each wire"
+    kh::SMatrix{3,3,Float64}
     "Cosine of wire direction with respect to axes x, y and z"
     cosϕ::SMatrix{3,3,Float64,9}
     "Anemometer setup"
@@ -43,25 +41,24 @@ the x axis.
  - `ang`: Angle that each wire makes with each coordinate axes
 """
 function Probe3d(sensor, cal, k², h², setup=""; ang=[125.264 45 114.094;
-                                                   125.264 135 114.094;
-                                                   125.264 90 35.264])
-
+                                                     125.264 135 114.094;
+                                                     125.264 90 35.264])
+    # DANTEC probes
+    kh = [k²[1]   1.0  h²[1]
+          h²[2] k²[2]    1.0
+          1.0 h²[3]  k³[3]]
+    
     # Calculate the cosine of the angles
     cosϕ = SMatrix{3,3,Float64}(cosd.(ang))
     c2e = SVector{3,Float64}( (1.0 + k²[1] + h²[1])*cosϕ[1,1]^2,
                               (1.0 + k²[2] + h²[2])*cosϕ[2,1]^2,
                               (1.0 + k²[3] + h²[3])*cosϕ[3,1]^2 )
-    A = SMatrix{3,3,Float64}([k²[1] 1.0      h²[1];
-                              h²[2] k²[2]    1.0;
-                              1.0   h²[3]  k²[3]])
     return Probe3d((sensor[1], sensor[2], sensor[3]),
-                   (cal[1], cal[2], cal[3]), (k²[1], k²[2], k²[3]),
-                   (h²[1], h²[2], h²[3]), cosϕ, model, tag, (RL,RL,RL),
-                   c2e, inv(A), (bridge[1],bridge[2],bridge[3]),
-                   support, (cable[1],cable[2],cable[3]))
+                   (cal[1], cal[2], cal[3]), kh, cosϕ, 
+                   c2e, inv(A), setup)
 end
 
-function (anem::Probe3d)(E₁, E₂, E₃, T)
+function velocity(anem::Probe3d, E₁, E₂, E₃, T)
 
     # Calibration curve and temperature correction for
     # each sensor and calculation of effective velocity for each wire
@@ -80,6 +77,9 @@ function (anem::Probe3d)(E₁, E₂, E₃, T)
             -U1*anem.cosϕ[1,2] - U2*anem.cosϕ[2,2] - U3*anem.cosϕ[3,2],
             -U1*anem.cosϕ[1,3] - U2*anem.cosϕ[2,3] - U3*anem.cosϕ[3,3])
 end
+
+(anem::Probe3d)(E₁, E₂, E₃, T) = velocity(anem, E₁, E₂, E₃, T)
+(anem::Probe3d)(E₁, E₂, E₃) = velocity(anem, E₁, E₂, E₃, anem.cal[1].T0)
 
 
 """
