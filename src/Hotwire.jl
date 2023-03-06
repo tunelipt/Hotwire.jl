@@ -11,12 +11,15 @@ export HWKingFit, BlendFit
 export AbstractProbe, AbstractProbe1d, AbstractProbe2d, AbstractProbe3d
 export HWCable, HWSupport, HWBridge
 export Probe1d, Probe2d, Probe3d
-
+export velocity, velocity!
 
 include("resistor.jl")
 include("wire.jl")
 include("tempcorr.jl")
-include("probes.jl")
 include("calibr.jl")
+include("probes.jl")
+include("probe2d.jl")
+include("probe3d.jl")
 include("hardware.jl")
+
 end # module
