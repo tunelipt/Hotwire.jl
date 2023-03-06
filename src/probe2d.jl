@@ -30,11 +30,27 @@ function velocity(anem::Probe2d, E1, E2, T)
 end
 
 
-function dircalibr(anem::Probe2d, ang, Uc, E1, E2, T)
-    Ux = Uc * cosd(ang)
-    Uy = Uc * sind(ang)
+import LinearAlgebra: dot
 
+function dircalibr(anem::Probe2d, ang, Uc, Uc1, Uc2)
     
+    A = @. (cosd(ang) + sind(ang))^2
+    B = @. (cosd(ang) - sind(ang))^2
+
+    X2A = @. (Uc^2 * A - Uc2^2)
+    X2B = @. (Uc^2 * B - Uc2^2) #-
+
+    X1A = @. (Uc^2 * A - Uc1^2)
+    X1B = @. (Uc^2 * B - Uc1^2)
+
+    # Fit the curves
+    # k1*X1A = -X1B
+    # k2*X2B = -X2A
+
+    k1 = -dot(X1B, X1A) / dot(X1A, X1A)
+    k2 = -dot(X2B, X2A) / dot(X2B, X2B)
+
+    return k1, k2
 end
 
 
