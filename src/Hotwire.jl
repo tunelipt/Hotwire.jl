@@ -1,6 +1,6 @@
 module Hotwire
 
-export Thermistor, Resistor, AbstractResistor, temperature, resistance
+export Thermistor, Resistor, AbstractResistor, temperature, resistance, reftemp
 export CTASensor, Wire, resistor, optemperature, overtemp, overheat_ratio, gain
 export AbstractThermalAnemometer
 export CCASensor, current

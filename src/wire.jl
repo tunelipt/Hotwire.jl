@@ -36,7 +36,7 @@ CTASensor(R::ResType, Rw; gain=1.0) where {ResType <: AbstractResistor} = CTASen
 CTASensor(R::ResType, Rw, T₀; gain=1.0) where {ResType <: AbstractResistor} = CTASensor(R, Rw, T₀, gain)
 
 
-Wire(R₀, Rw, T₀=293.15, α=0.36e-3, gain=1.0) = CTASensor(Resistor(R₀, α, T₀), Rw; gain=gain)
+Wire(R₀, Rw, T₀=293.15, α=0.36e-3, gain=1.0) = CTASensor(Resistor(R₀, α, T₀), Rw, T₀; gain=gain)
 
 "Operating temperature of the CTA"
 optemperature(w::CTASensor) = temperature(w.R, w.Rw)
@@ -56,7 +56,9 @@ resistor(w::AbstractThermalAnemometer) = w.R
 "Gain of anemometer output"
 gain(w::AbstractThermalAnemometer) = w.gain
 
-                                          
+"Reference temperature of sensor"
+reftemp(w::CTASensor) = w.T₀
+
 """
     CCASensor(R, a)
 
@@ -74,9 +76,13 @@ struct CCASensor{ResType <: AbstractResistor} <: AbstractThermalAnemometer
     I::Float64
     "Output gain"
     gain::Float64
+    "Reference temperature"
+    T₀::Float64
 end
-CCASensor(R::ResType, I; gain=1.0) where {ResType <: AbstractResistor} = CCASensor(R,I,gain)
+CCASensor(R::ResType, I, T0=reftemp(R); gain=1.0) where {ResType <: AbstractResistor} = CCASensor(R,I,gain,T0)
 Base.broadcastable(sensor::CCASensor) = Ref(sensor)
 
 "Current in A flowing through the CCA"
 current(w::CCASensor) = w.I
+
+reftemp(w::CCASensor) = w.T₀

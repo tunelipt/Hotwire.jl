@@ -4,15 +4,15 @@ mutable struct Probe3d{Anem<:AbstractThermalAnemometer,Calibr,Setup} <: Abstract
     "Sensor calibration"
     cal::NTuple{3,Calibr}
     "Matrix with h² and k² for each wire"
-    kh::SMatrix{3,3,Float64}
+    kh::SMatrix{3,3,Float64,9}
     "Cosine of wire direction with respect to axes x, y and z"
     cosϕ::SMatrix{3,3,Float64,9}
-    "Anemometer setup"
-    setup::Setup
     "Factor to calculate effective velocity from calibration velocity"
     c2e::SVector{3,Float64}
     "Matrix to calculate velocity in wire coordinates from effective vel."
     A::SMatrix{3,3,Float64,9}
+    "Anemometer setup"
+    setup::Setup
 end
 
 """
@@ -44,18 +44,19 @@ function Probe3d(sensor, cal, k², h², setup=""; ang=[125.264 45 114.094;
                                                      125.264 135 114.094;
                                                      125.264 90 35.264])
     # DANTEC probes
-    kh = [k²[1]   1.0  h²[1]
-          h²[2] k²[2]    1.0
-          1.0 h²[3]  k³[3]]
+    kh = @SMatrix [k²[1]   1.0   h²[1]
+                   h²[2]  k²[2]    1.0
+                    1.0   h²[3]  k²[3]]
     
     # Calculate the cosine of the angles
     cosϕ = SMatrix{3,3,Float64}(cosd.(ang))
-    c2e = SVector{3,Float64}( (1.0 + k²[1] + h²[1])*cosϕ[1,1]^2,
-                              (1.0 + k²[2] + h²[2])*cosϕ[2,1]^2,
-                              (1.0 + k²[3] + h²[3])*cosϕ[3,1]^2 )
+    c2e = @SVector  [(1.0 + k²[1] + h²[1])*cosϕ[1,1]^2,
+                     (1.0 + k²[2] + h²[2])*cosϕ[2,1]^2,
+                     (1.0 + k²[3] + h²[3])*cosϕ[3,1]^2 ]
+    
     return Probe3d((sensor[1], sensor[2], sensor[3]),
                    (cal[1], cal[2], cal[3]), kh, cosϕ, 
-                   c2e, inv(A), setup)
+                   c2e, inv(kh), setup)
 end
 
 function velocity(anem::Probe3d, E₁, E₂, E₃, T)

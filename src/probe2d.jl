@@ -30,7 +30,7 @@ function velocity(anem::Probe2d, E1, E2, T)
 end
 
 (anem::Probe2d)(E1, E2, T) = velocity(anem, E1, E2, T)
-(anem::Probe2d)(E1, E2) = velocity(anem, E1, E2, anem.cal[1].T0)
+(anem::Probe2d)(E1, E2) = velocity(anem, E1, E2, anem.sensor[1].T₀)
 
 import LinearAlgebra: dot
 
