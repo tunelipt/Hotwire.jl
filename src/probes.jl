@@ -34,6 +34,7 @@ function Probe1d(sensor, cal, setup="")
     return Probe1d(sensor, cal, setup)
 end
 
+reftemp(anem::Probe1d) = reftemp(anem.sensor)
                                                         
 (anem::Probe1d)(E, temp) = anem.cal(anem.sensor, E, temp)
 (anem::Probe1d)(E) = anem.cal(anem.sensor, E, anem.cal.T0)

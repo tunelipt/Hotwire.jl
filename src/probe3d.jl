@@ -39,10 +39,19 @@ the x axis.
  - `cal`: `CalibrCurve` object
  - `setup`: hardware/system  configuration
  - `ang`: Angle that each wire makes with each coordinate axes
+
+The angle that each wire makes with the probe coordinates system is a matrix
+where each column `i` is the angle that wire `i` makes with axes x, y and z.
+
+For Dantex triaxial probes, wires 1 and make an angle of 45° with axis y, wire
+3 is in plane xz and cos²θ = 1/3 where θ is the angle that the wires 1 - 3 make
+with coordinate axis x.
 """
-function Probe3d(sensor, cal, k², h², setup=""; ang=[125.264 45 114.094;
-                                                     125.264 135 114.094;
-                                                     125.264 90 35.264])
+function Probe3d(sensor, cal, k², h², setup=""; ang=[125.2643897 45 114.0953355;
+                                                     125.2643897 135 114.0953355;
+                                                     125.2643897 90 35.2643897])
+    # ang: angle 
+    #   ang=[125.264 45 114.094;  125.264 135 114.094;   125.264 90 35.264])
     # DANTEC probes
     kh = @SMatrix [k²[1]   1.0   h²[1]
                    h²[2]  k²[2]    1.0
@@ -59,13 +68,15 @@ function Probe3d(sensor, cal, k², h², setup=""; ang=[125.264 45 114.094;
                    c2e, inv(kh), setup)
 end
 
+reftemp(anem::Probe3d) = reftemp(anem.sensor[1])
+
 function velocity(anem::Probe3d, E₁, E₂, E₃, T)
 
     # Calibration curve and temperature correction for
     # each sensor and calculation of effective velocity for each wire
-    Uᵉ = SVector(anem.cal[1](anem.sensor[1], E₁, T)^2 * anem.c2e[1], 
-                 anem.cal[2](anem.sensor[2], E₂, T)^2 * anem.c2e[2], 
-                 anem.cal[3](anem.sensor[3], E₃, T)^2 * anem.c2e[3])
+    Uᵉ = @SVector [anem.cal[1](anem.sensor[1], E₁, T)^2 * anem.c2e[1], 
+                   anem.cal[2](anem.sensor[2], E₂, T)^2 * anem.c2e[2], 
+                   anem.cal[3](anem.sensor[3], E₃, T)^2 * anem.c2e[3]]
     
     # Calculate speed in wire coordinates
     Uʷ = anem.A * Uᵉ
@@ -80,7 +91,7 @@ function velocity(anem::Probe3d, E₁, E₂, E₃, T)
 end
 
 (anem::Probe3d)(E₁, E₂, E₃, T) = velocity(anem, E₁, E₂, E₃, T)
-(anem::Probe3d)(E₁, E₂, E₃) = velocity(anem, E₁, E₂, E₃, anem.cal[1].T0)
+(anem::Probe3d)(E₁, E₂, E₃) = velocity(anem, E₁, E₂, E₃, reftemp(anem.sensor[1]))
 
 
 """

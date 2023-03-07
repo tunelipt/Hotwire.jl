@@ -1,7 +1,8 @@
 # Testing Probe2d stuff
 
 let
-    trivialcal(E,T) = E
+    E = collect(1.0:20.0)
+    trivialcal = CalibrCurve(E, E, x->x, 293.15)
     wire1 = Wire(3.5, 6.3)
     wire2 = Wire(3.7, 6.7)
 

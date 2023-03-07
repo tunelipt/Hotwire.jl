@@ -210,6 +210,6 @@ using Test
     @test cal(cta, sqrt(2.0)) ≈ 0.0
 
     include("test_probe2d.jl")
-    #include("test_probe3d.jl")
+    include("test_probe3d.jl")
     
 end

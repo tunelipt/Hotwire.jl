@@ -18,6 +18,8 @@ struct CalibrCurve{Fit} <: AbstractCalibr1d
 end
 Base.broadcastable(cal::CalibrCurve) = Ref(cal)
 
+reftemp(cal::CalibrCurve) = cal.T0
+
 """
     cal = calibr_curve(sensor, V, E, temp, N)
 

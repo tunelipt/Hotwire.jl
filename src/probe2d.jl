@@ -11,10 +11,12 @@ mutable struct Probe2d{Anem<:AbstractThermalAnemometer,Calibr,Setup} <: Abstract
     setup::Setup
 end
 
-function velocity(anem::Probe2d, E1, E2, T)
+reftemp(anem::Probe2d) = reftemp(anem.sensor[1])
 
-    Uc1 = anem.cal[1](E1, T)  # Calibration velocity of wire 1
-    Uc2 = anem.cal[2](E2, T)  # Calibration velocity of wire 1
+function velocity(anem::Probe2d, E1, E2, T=reftemp(anem.sensor[1]))
+
+    Uc1 = anem.cal[1](anem.sensor[1], E1, T)  # Calibration velocity of wire 1
+    Uc2 = anem.cal[2](anem.sensor[2], E2, T)  # Calibration velocity of wire 1
 
     k₁², k₂² = anem.k²
 
@@ -30,7 +32,7 @@ function velocity(anem::Probe2d, E1, E2, T)
 end
 
 (anem::Probe2d)(E1, E2, T) = velocity(anem, E1, E2, T)
-(anem::Probe2d)(E1, E2) = velocity(anem, E1, E2, anem.sensor[1].T₀)
+(anem::Probe2d)(E1, E2) = velocity(anem, E1, E2, reftemp(anem.sensor[1]))
 
 import LinearAlgebra: dot
 
