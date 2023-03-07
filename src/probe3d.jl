@@ -41,7 +41,7 @@ the x axis.
  - `ang`: Angle that each wire makes with each coordinate axes
 
 The angle that each wire makes with the probe coordinates system is a matrix
-where each column `i` is the angle that wire `i` makes with axes x, y and z.
+where each *row* `i` is the angle that wire `i` makes with axes x, y and z.
 
 For Dantex triaxial probes, wires 1 and make an angle of 45° with axis y, wire
 3 is in plane xz and cos²θ = 1/3 where θ is the angle that the wires 1 - 3 make
@@ -132,3 +132,59 @@ function velocity(anem::Probe3d, E::AbstractMatrix, T, idx=1:3)
 
     return Uout
 end
+
+
+"""
+`dircalibr(anem, Uc, Uc1, Uc2, Uc3, ang, angtilt)`
+
+Performs an angular calibration of a triaxial probe.
+
+### Arguments
+
+* `anem`: `Probe3d` objetc
+* `Uc`: Angular calibration velocity
+* `Uc1`: calibration velocity for wire 1
+* `Uc2`: calibration velocity for wire 1
+* `Uc3`: calibration velocity for wire 1
+* `ϕ`: roll angles used for directional calibration in degrees
+* `θ`: Inclination angle used for directional calibration in degrees
+
+The calibration velocity for each wire is the velocity obtained from
+the calibration curve already corrected for temperature changes.
+"""
+function dircalibr(anem::Probe3d, Uc, Uc1, Uc2, Uc3, ϕ, θ=30.0)
+
+    Ux = Uc .* cosd.(θ) .+ 0.0 .* ϕ
+    uperp = Uc .* sind.(θ)
+    Uz = uperp .* sind.(ϕ)
+    Uy = - uperp .* cosd.(ϕ)
+
+    # Cossine of angles of wire with probe coordinate system
+    cosw = anem.cosϕ
+    
+    # Project this in wire coordinates
+    U₁² = (Ux * cosw[1,1] + Uy * cosw[1,2] + Uz * cosw[1,3]).^2
+    U₂² = (Ux * cosw[2,1] + Uy * cosw[2,2] + Uz * cosw[2,3]).^2
+    U₃² = (Ux * cosw[3,1] + Uy * cosw[3,2] + Uz * cosw[3,3]).^2
+
+    # Efective cooling velocity from probe calibration
+    u1cos = Uc1 .^ 2 * cosw[1,1]^2
+    u2cos = Uc2 .^ 2 * cosw[2,1]^2
+    u3cos = Uc3 .^ 2 * cosw[3,1]^2
+    
+    Ak1 = U₁² .- u1cos;  Ah1 = U₃² .- u1cos; y1 = u1cos .- U₂²
+    Ak2 = U₂² .- u2cos;  Ah2 = U₁² .- u2cos; y2 = u2cos .- U₃²
+    Ak3 = U₃² .- u3cos;  Ah3 = U₂² .- u3cos; y3 = u3cos .- U₁²
+
+    fit1 = CurveFit.fit_linear_model([Ak1 Ah1], y1)
+    fit2 = CurveFit.fit_linear_model([Ak2 Ah2], y2)
+    fit3 = CurveFit.fit_linear_model([Ak3 Ah3], y3)
+
+    k = [fit1[1], fit2[1], fit3[1]]
+    h = [fit1[2], fit2[2], fit3[2]]
+    
+    return k,h
+    
+
+end
+

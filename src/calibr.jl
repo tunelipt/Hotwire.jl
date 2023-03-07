@@ -67,7 +67,7 @@ julia>
 
 ```
 """
-function calibr_curve(sensor::CTA, V, E, temp, N=5; extrapolate=true) where{CTA<:Hotwire.AbstractThermalAnemometer}
+function calibr_curve(sensor::CTA, V, E, temp, N=5; extrapolate=false) where{CTA<:Hotwire.AbstractThermalAnemometer}
     
     nz = V .> 0  # Points with velocity above zero 
     Tm = mean(temp)
