@@ -3,22 +3,33 @@ mutable struct Probe3d{Anem<:AbstractThermalAnemometer,Calibr,Setup} <: Abstract
     sensor::NTuple{3,Anem}
     "Sensor calibration"
     cal::NTuple{3,Calibr}
-    "Matrix with h² and k² for each wire"
-    kh::SMatrix{3,3,Float64,9}
+    "k² directional calibration coefficient"
+    k²::Vector{Float64}
+    "h² directional calibration coefficient"
+    h²::Vector{Float64}
+    "Index of h² for each wire"
+    ih::Vector{Int}
     "Cosine of wire direction with respect to axes x, y and z"
-    cosϕ::SMatrix{3,3,Float64,9}
+    cosϕ::Matrix{Float64}
     "Factor to calculate effective velocity from calibration velocity"
-    c2e::SVector{3,Float64}
+    c2e::Vector{Float64}
     "Matrix to calculate velocity in wire coordinates from effective vel."
-    A::SMatrix{3,3,Float64,9}
+    A::Matrix{Float64}
+    "Index of axis aloing which calibration is carried out"
+    idircal::Int
     "Anemometer setup"
     setup::Setup
 end
 
-"""
-    `Probe3d(sensor, cal, k², h², sensor="")`
+const cosϕ_dantec =  [-sqrt(1/3)  1/sqrt(2)   -sqrt(1-1/3-1/2);
+                      -sqrt(1/3)  -1/sqrt(2)  -sqrt(1-1/3-1/2);
+                      -sqrt(1/3)      0.0         sqrt(1-1/3) ]
 
-Creates a 2d probe. This completely characterizes a 1d probe. It includes
+"""
+`Probe3d(sensor, cal, k², h², setup=""; ih=[3,1,2], idircal=1,
+         cosang=cosϕ_dantec)`
+
+Creates a 3d probe. This completely characterizes a 3d probe. It includes
 information on calibration, directional calibration, bridge configuration,
  output filter, etc.
 The effective velocity acting on a wire is given by 
@@ -30,15 +41,18 @@ to the wire and in the direction of the probe body, U₂ is the velocity
 normal to the flow but also normal to the body and U₃ is the velocity 
 along the wire.
 
-The function assumes that the calibration was carried out with flow along
-the x axis. 
+The function assumes that the calibration was carried along axis `idircal`.
 
-# Arguments:
+### Arguments:
 
  - `sensor`: a tuple of `AbstractThermalAnemometer` objects (3)
- - `cal`: `CalibrCurve` object
+ - `cal`: Tuple of `CalibrCurve` objects, one calibration for each sensor
+ - `k²`: directional calibration coefficient k² for each wire. See [`dircalibr`](@ref).
+ - `h²`: directional calibration coefficient k² for each wire. See [`dircalibr`](@ref).
  - `setup`: hardware/system  configuration
- - `ang`: Angle that each wire makes with each coordinate axes
+ - `ih`: index of velocity component where h² is applied for each wire
+ - `idircal`: Index of axis along which the calibration is carried out
+ - `cosang`: Cossine of angle that each wire makes with each coordinate axes
 
 The angle that each wire makes with the probe coordinates system is a matrix
 where each *row* `i` is the angle that wire `i` makes with axes x, y and z.
@@ -47,25 +61,22 @@ For Dantex triaxial probes, wires 1 and make an angle of 45° with axis y, wire
 3 is in plane xz and cos²θ = 1/3 where θ is the angle that the wires 1 - 3 make
 with coordinate axis x.
 """
-function Probe3d(sensor, cal, k², h², setup=""; ang=[125.2643897 45 114.0953355;
-                                                     125.2643897 135 114.0953355;
-                                                     125.2643897 90 35.2643897])
-    # ang: angle 
-    #   ang=[125.264 45 114.094;  125.264 135 114.094;   125.264 90 35.264])
-    # DANTEC probes
-    kh = @SMatrix [k²[1]   1.0   h²[1]
-                   h²[2]  k²[2]    1.0
-                    1.0   h²[3]  k²[3]]
+function Probe3d(sensor, cal, k², h², setup=""; ih=[3,1,2], idircal=1,
+                 cosang=cosϕ_dantec)
+    K = ones(3,3)
+    for i in 1:3
+        K[i,i] = k²[i]
+        K[i,ih[i]] = h²[i]
+    end
     
-    # Calculate the cosine of the angles
-    cosϕ = SMatrix{3,3,Float64}(cosd.(ang))
-    c2e = @SVector  [(1.0 + k²[1] + h²[1])*cosϕ[1,1]^2,
-                     (1.0 + k²[2] + h²[2])*cosϕ[2,1]^2,
-                     (1.0 + k²[3] + h²[3])*cosϕ[3,1]^2 ]
+    cosϕ = cosang
+    c2e =  [(1.0 + k²[1] + h²[1])*cosϕ[1,idircal]^2,
+            (1.0 + k²[2] + h²[2])*cosϕ[2,idircal]^2,
+            (1.0 + k²[3] + h²[3])*cosϕ[3,idircal]^2 ]
     
     return Probe3d((sensor[1], sensor[2], sensor[3]),
-                   (cal[1], cal[2], cal[3]), kh, cosϕ, 
-                   c2e, inv(kh), setup)
+                   (cal[1], cal[2], cal[3]), k², h², ih, cosϕ, 
+                   c2e, inv(K), idircal, setup)
 end
 
 reftemp(anem::Probe3d) = reftemp(anem.sensor[1])
@@ -74,16 +85,19 @@ function velocity(anem::Probe3d, E₁, E₂, E₃, T)
 
     # Calibration curve and temperature correction for
     # each sensor and calculation of effective velocity for each wire
-    Uᵉ = @SVector [anem.cal[1](anem.sensor[1], E₁, T)^2 * anem.c2e[1], 
-                   anem.cal[2](anem.sensor[2], E₂, T)^2 * anem.c2e[2], 
-                   anem.cal[3](anem.sensor[3], E₃, T)^2 * anem.c2e[3]]
+    Uc1 = anem.cal[1](anem.sensor[1], E₁, T)
+    Uc2 = anem.cal[2](anem.sensor[2], E₂, T)
+    Uc3 = anem.cal[3](anem.sensor[3], E₃, T)
+    Uᵉ = [Uc1^2 * anem.c2e[1], 
+          Uc2^2 * anem.c2e[2], 
+          Uc3^2 * anem.c2e[3]]
     
     # Calculate speed in wire coordinates
     Uʷ = anem.A * Uᵉ
     
-    U1 = sqrt(max(Uʷ[1], 0.0))
-    U2 = sqrt(max(Uʷ[2], 0.0))
-    U3 = sqrt(max(Uʷ[3], 0.0))
+    U1 = sqrt(abs(Uʷ[1]))
+    U2 = sqrt(abs(Uʷ[2]))
+    U3 = sqrt(abs(Uʷ[3]))
     
     return (-U1*anem.cosϕ[1,1] - U2*anem.cosϕ[2,1] - U3*anem.cosϕ[3,1],
             -U1*anem.cosϕ[1,2] - U2*anem.cosϕ[2,2] - U3*anem.cosϕ[3,2],
@@ -92,46 +106,6 @@ end
 
 (anem::Probe3d)(E₁, E₂, E₃, T) = velocity(anem, E₁, E₂, E₃, T)
 (anem::Probe3d)(E₁, E₂, E₃) = velocity(anem, E₁, E₂, E₃, reftemp(anem.sensor[1]))
-
-
-"""
-    `velocity!(anem, E, T, 1:3)`
-
-Calculate, in place, the velocity from an anemometer. In this function, 
-the input is an abstract array where 3 columns given by argument `idx` 
-represent the output of each anemometer. A unique temperature should be 
-used
-
-"""
-function velocity!(anem::Probe3d, E::AbstractMatrix, T, idx=1:3)
-
-    npts = size(E,1)
-    for i in 1:npts
-        U, V, W = anem(E[i,idx[1]], E[i,idx[2]], E[i,idx[3]], T)
-        E[i,idx[1]], E[i,idx[2]], E[i,idx[3]] = U, V, W
-    end
-
-end
-
-"""
-    `velocity(anem, E, T, 1:3)`
-
-Velocity calculation for arrays. A new array where each column represents
-a component of the velocity is created
-
-"""
-function velocity(anem::Probe3d, E::AbstractMatrix, T, idx=1:3)
-    npts = size(E,1)
-    
-    Uout = zeros(npts, 3)
-    
-    for i in 1:npts
-        U, V, W = anem(E[i,idx[1]], E[i,idx[2]], E[i,idx[3]])
-        Uout[i,idx[1]], Uout[i,idx[2]], Uout[i,idx[3]] = U, V, W
-    end
-
-    return Uout
-end
 
 
 """
@@ -166,11 +140,11 @@ function dircalibr(anem::Probe3d, Uc, Uc1, Uc2, Uc3, ϕ, θ=30.0)
     U₁² = (Ux * cosw[1,1] + Uy * cosw[1,2] + Uz * cosw[1,3]).^2
     U₂² = (Ux * cosw[2,1] + Uy * cosw[2,2] + Uz * cosw[2,3]).^2
     U₃² = (Ux * cosw[3,1] + Uy * cosw[3,2] + Uz * cosw[3,3]).^2
-
+    idir = anem.idircal
     # Efective cooling velocity from probe calibration
-    u1cos = Uc1 .^ 2 * cosw[1,1]^2
-    u2cos = Uc2 .^ 2 * cosw[2,1]^2
-    u3cos = Uc3 .^ 2 * cosw[3,1]^2
+    u1cos = Uc1 .^ 2 * cosw[1,idir]^2
+    u2cos = Uc2 .^ 2 * cosw[2,idir]^2
+    u3cos = Uc3 .^ 2 * cosw[3,idir]^2
     
     Ak1 = U₁² .- u1cos;  Ah1 = U₃² .- u1cos; y1 = u1cos .- U₂²
     Ak2 = U₂² .- u2cos;  Ah2 = U₁² .- u2cos; y2 = u2cos .- U₃²
