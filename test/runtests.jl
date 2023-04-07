@@ -185,7 +185,7 @@ using Test
     fit = Polynomial(coefs)
     U = fit.(E)
 
-    cal = calibr_curve(cta, U, E, T0, 5, extrapolate=false)
+    cal = calibr_curve(cta, U, E, T0, 5)
     
     @test cal.T0 == T0
     @test cal.fit.coeffs ≈ coefs rtol=1e-4
@@ -197,18 +197,16 @@ using Test
     n = 0.42
     E = sqrt.(A .+ B .* U .^ n)
     fitk = KingFit(E, U)
-    efitk = ExtrapolateFit(fitk, sqrt(A), E[1])
     
-    cal = CalibrCurve(E, collect(U), efitk, T0)
+    cal = CalibrCurve(E, collect(U), fitk, T0)
     
-    @test efitk.A ≈ A
-    @test efitk.B ≈ B
-    @test efitk.n ≈ n
+    @test fitk.coefs[1] ≈ A
+    @test fitk.coefs[2] ≈ B
+    @test fitk.coefs[3] ≈ n
 
     @test all(cal.(cta, E) .≈ U)
     
-    @test cal(cta, sqrt(2.0)) ≈ 0.0
-
+    
     include("test_probe2d.jl")
     include("test_probe3d.jl")
     

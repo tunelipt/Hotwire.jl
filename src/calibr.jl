@@ -67,7 +67,7 @@ julia>
 
 ```
 """
-function calibr_curve(sensor::CTA, V, E, temp, N=5; extrapolate=false) where{CTA<:Hotwire.AbstractThermalAnemometer}
+function calibr_curve(sensor::CTA, V, E, temp, N=5) where{CTA<:Hotwire.AbstractThermalAnemometer}
     
     nz = V .> 0  # Points with velocity above zero 
     Tm = mean(temp)
@@ -76,173 +76,13 @@ function calibr_curve(sensor::CTA, V, E, temp, N=5; extrapolate=false) where{CTA
     Ec = tempcorr.(Ref(sensor), E, temp, Tm)
     Uc = [u for u in V]
     
-    V1 = V[nz]
-    E1 = Ec[nz]
-
     # Fit the nonzero velocities to a polynomial of degree N
-    fit = curve_fit(Polynomial, E1, V1, N)
+    fit = curve_fit(Polynomial, Ec, Uc, N)
 
-    if extrapolate
-        # Now if the speed is lower than te minimum calibration speed,
-        # attempt to extrapolate using King's law: E^2 = A + B + U^n
-        Ea = minimum(Ec[.!nz])
-        Eb = minimum(E1)
-        efit = ExtrapolateFit(fit, Ea, Eb)
-        return CalibrCurve(Ec, Uc, efit, Tm)
-    else
-        return CalibrCurve(Ec, Uc, fit, Tm)
-    end
-    
-end
-
-struct ExtrapolateFit{Fit}
-    "A curve fit object obtained during calibration"
-    fit::Fit
-    "Minimum output WITH velocity"
-    E0::Float64
-    "King's law A coefficient"
-    A::Float64
-    "King's law B coefficient"
-    B::Float64
-    "King's law n coefficient"
-    n::Float64
-end
-
-"""
-    `efit = ExtrapolateFit(fit, Ea, Eb)`
-
-For very low speeds, the behavior of thermal anemometers change 
-as natural convection begins to dominate the heat transfer from the probe.
-Most calibrations reach has a nonzero minimum velocity. This function
-extrapolates the calibration curve to zero.
-
-It uses the calibration point with lowest speed and its derivative. 
-It also uses the output at 0 velocity as a data point.
-
-With these information, a King's law is fitted. Notice that the zero
-velocity point is unstable since any air current whatsoever will enhance
-heat transfer. 
-
-The following curve will be used to approximate the low speeds:
-
-``
-E² = A + B⋅Uⁿ
-``
-
-Arguments:
-
- - `fit` curve fit obtained from calibration
- - `Ea`  Anemometer output for 0 velocity
- - `Eb` Anemometer output for minimum calibration velocity
-
-**Returns**: An `ExtrapolateFit` object 
-
-"""
-function ExtrapolateFit(fit::Fit, Ea, Eb) where {Fit}
-
-    Ua = 0.0
-    Ub = fit(Eb)
-    f = eps(Eb) * 1e7
-    Eb1 = Eb + f
-    Eb0 = Eb - f
-    Ub1 = fit(Eb1)
-    Ub0 = fit(Eb0)
-    dE² = ( (Eb1 - Eb0) / (Ub1 - Ub0) ) * (Eb1 + Eb0)
-    A = Ea*Ea
-    n = Ub * dE² / (Eb*Eb - A)
-
-    B = (Eb*Eb-A)/Ub^n
-
-    return ExtrapolateFit(fit, Eb, A, B, n)
-end
-Base.broadcastable(fit::ExtrapolateFit) = Ref(cal)
-
-"""
-    `fit(E)`
-
-Uses an `ExtrapolateFit` object as a function call.
-
-If E > fit.E0, use the original fit. Otherwise use the extrapolation.
-"""
-function (fit::ExtrapolateFit)(E)
-    if E < fit.E0
-        E2 = E*E
-        if E2 < fit.A
-            return zero(E)
-        else
-            return ((E2 - fit.A) / fit.B)^(1/fit.n)
-        end
-    else
-        return fit.fit(E)
-    end
+    return CalibrCurve(Ec, Uc, fit, Tm) 
 end
 
 
-"""
-    `BlendFit(fit₁, fit₂, E₁, E₂)`
-
-Blend two curve fits together.
-The approximation `fit₁` is used for ``E < E₁`` and
-`fit₂` is used for ``E > E₂``. For intermediary values, 
-a linear blending is used
-
-"""
-struct BlendFit{Fit₁,Fit₂}
-    "Fit for lower speeds"
-    fit₁::Fit₁
-    "Fit for higher speeds"
-    fit₂::Fit₂
-    "Lower threshold"
-    E₁::Float64
-    "Higher threshold"
-    E₂::Float64
-end
-Base.broadcastable(fit::BlendFit) = Ref(cal)
-
-"""
-    `fit(E)`
-
-Calculates the blended fit
-"""
-function (fit::BlendFit)(E)
-    if E < fit.E₁
-        return fit.fit₁(E)
-    elseif E > fit.E₂
-        return fit.fit₂(E)
-    else
-        u₁ =  fit.fit₁(E)
-        u₂ = fit.fit₂(E)
-        ΔE = fit.E₂ - fit.E₁
-        return u₁ * (fit.E₂-E) / ΔE + u₂*(E - fit.E₁)/ΔE
-    end
-end
-
-
-struct HWKingFit
-    A::Float64
-    B::Float64
-    n::Float64
-end
-Base.broadcastable(fit::HWKingFit) = Ref(cal)
-
-function HWKingFit(E::AbstractVector, U::AbstractVector, ϵ=1e-8, maxiter=200)
-
-    A, B, n = king_fit(E, U, ϵ, maxiter)
-
-    return HWKingFit(A, B, n)
-end
-
-function (fit::HWKingFit)(E)
-
-    E² = E*E
-    if E² < fit.A
-        return zero(E)
-    else
-        return (  (E²-fit.A) / fit.B )^(1/fit.n)
-    end
-end
-
-    
 
 
 """

@@ -16,6 +16,7 @@ export dircalibr
 include("resistor.jl")
 include("wire.jl")
 include("tempcorr.jl")
+include("fit.jl")
 include("calibr.jl")
 include("probes.jl")
 include("probe2d.jl")
