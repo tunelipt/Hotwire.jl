@@ -5,8 +5,8 @@ export CTASensor, Wire, resistor, optemperature, overtemp, overheat_ratio, gain
 export AbstractThermalAnemometer
 export CCASensor, current
 export tempcorr
-export calibr_curve, CalibrCurve, ExtrapolateFit
-export HWKingFit, BlendFit
+export calibr_curve, CalibrCurve
+export HWKingFit, KingPoly
 
 export AbstractProbe, AbstractProbe1d, AbstractProbe2d, AbstractProbe3d
 export HWCable, HWSupport, HWBridge

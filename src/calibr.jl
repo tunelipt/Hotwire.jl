@@ -1,5 +1,4 @@
 using CurveFit
-using Polynomials
 using Statistics
 
 
