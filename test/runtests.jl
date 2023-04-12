@@ -1,6 +1,5 @@
 using Hotwire
 using Polynomials
-using CurveFit
 using Test
 
 @testset "Hotwire.jl" begin
@@ -196,13 +195,13 @@ using Test
     B = 0.7
     n = 0.42
     E = sqrt.(A .+ B .* U .^ n)
-    fitk = KingFit(E, U)
+    fitk = KingLaw(E, U)
     
     cal = CalibrCurve(E, collect(U), fitk, T0)
     
-    @test fitk.coefs[1] ≈ A
-    @test fitk.coefs[2] ≈ B
-    @test fitk.coefs[3] ≈ n
+    @test fitk.A ≈ A
+    @test fitk.B ≈ B
+    @test fitk.n ≈ n
 
     @test all(cal.(cta, E) .≈ U)
     

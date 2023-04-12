@@ -1,4 +1,3 @@
-using CurveFit
 using Statistics
 
 
@@ -66,7 +65,7 @@ julia>
 
 ```
 """
-function calibr_curve(sensor::CTA, V, E, temp, N=5) where{CTA<:Hotwire.AbstractThermalAnemometer}
+function calibr_curve(sensor::CTA, V, E, temp, fitfun::Function) where{CTA<:Hotwire.AbstractThermalAnemometer}
     
     nz = V .> 0  # Points with velocity above zero 
     Tm = mean(temp)
@@ -76,11 +75,13 @@ function calibr_curve(sensor::CTA, V, E, temp, N=5) where{CTA<:Hotwire.AbstractT
     Uc = [u for u in V]
     
     # Fit the nonzero velocities to a polynomial of degree N
-    fit = curve_fit(Polynomial, Ec, Uc, N)
+    fit = fitfun(Ec, Uc) 
 
     return CalibrCurve(Ec, Uc, fit, Tm) 
 end
 
+calibr_curve(sensor, V, E, temp, N=5) =
+    calibr_curve(sensor, V, E, temp, make_poly_fitfun(N))
 
 
 

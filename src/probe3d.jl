@@ -150,9 +150,10 @@ function dircalibr(anem::Probe3d, Uc, Uc1, Uc2, Uc3, ϕ, θ=30.0)
     Ak2 = U₂² .- u2cos;  Ah2 = U₁² .- u2cos; y2 = u2cos .- U₃²
     Ak3 = U₃² .- u3cos;  Ah3 = U₂² .- u3cos; y3 = u3cos .- U₁²
 
-    fit1 = CurveFit.fit_linear_model([Ak1 Ah1], y1)
-    fit2 = CurveFit.fit_linear_model([Ak2 Ah2], y2)
-    fit3 = CurveFit.fit_linear_model([Ak3 Ah3], y3)
+    
+    fit1 = linearfit(y1, Ak1, Ah1) 
+    fit2 = linearfit(y2, Ak2, Ah2) 
+    fit3 = linearfit(y3, Ak3, Ah3) 
 
     k = [fit1[1], fit2[1], fit3[1]]
     h = [fit1[2], fit2[2], fit3[2]]
