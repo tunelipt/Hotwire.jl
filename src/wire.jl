@@ -73,17 +73,18 @@ A structure to manage constant current anemometer sensors (CCA)
 
 
 """
-struct CCASensor{ResType <: AbstractResistor} <: AbstractThermalAnemometer
+struct CCASensor{T<:Number, ResType<:AbstractResistor{T}} <: AbstractThermalAnemometer
     "Element whose resistance changes with temperature"
     R::ResType
     "Operating current in Ampere"
-    I::Float64
+    I::T
     "Output gain"
-    gain::Float64
+    gain::T
     "Reference temperature"
-    T₀::Float64
+    T₀::T
 end
-CCASensor(R::ResType, I, T0=reftemp(R); gain=1.0) where {ResType <: AbstractResistor} = CCASensor(R,I,gain,T0)
+CCASensor(R::ResType, I, T0=reftemp(R); gain=1.0) where {T,ResType<:AbstractResistor{T}} =
+    CCASensor(R,convert(T,I),convert(T,gain),convert(T,T0))
 Base.broadcastable(sensor::CCASensor) = Ref(sensor)
 
 "Current in A flowing through the CCA"

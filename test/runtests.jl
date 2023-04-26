@@ -96,8 +96,21 @@ using Test
     E = tempcorr(w, E1, Too1)
     Tw = optemperature(w)
     @test E/E1 ≈ sqrt( (Tw - Too) / (Tw - Too1) )
+
+    Too = 20f0+273.15f0
+    r = Resistor(3.5f0, 0.0036f0, Too)
+    w = CTASensor(r, 5.5f0)
+    @test 1f0 ≈ tempcorr(w, 1.0f0, Too) # No temperature correction
+    @test tempcorr(w, 1f0, 25f0+273.15f0) > 1f0 # Increased temperature -> lower anemometer output
+    @test tempcorr(w, 1f0, 15f0+273.15f0) < 1f0 # Decreased temperature -> higher anemometer output
+    E1 = 1f0
+    Too1 = 25f0+273.15f0
+    E = tempcorr(w, E1, Too1)
+    Tw = optemperature(w)
+    @test E/E1 ≈ sqrt( (Tw - Too) / (Tw - Too1) )
     
-    
+    Too = 20.0+273.15
+    Too1 = 25.0+273.15
     r = Thermistor(1e3, 3300, Too)
     w = CTASensor(r, 10.0)
     @test 1.0 ≈ tempcorr(w, 1.0, 20.0+273.15) # No temperature correction
@@ -145,7 +158,7 @@ using Test
     @test Eo / E ≈ (Two - To) / (Tw - Te)
     @test hA ≈ hAo
 
-
+    
     Te = 30.0+273.15
     E = Eo
     Eo = tempcorr(w, E, Te, temperature(w.R))
@@ -199,6 +212,88 @@ using Test
     end
 
 
+    # tempcorr(CCASensor) Float32
+    To = 20f0+273.15f0
+    r = Resistor(3.5f0, 0.0036f0, To)
+    Two = 100f0+273.15f0
+
+    Rwo = resistance(r, Two)
+    I = 0.2f0
+    Eo = Rwo * I
+    hA = Eo*I / (Two - To)
+    g = 1f0
+    
+    w = CCASensor(r, I, g)
+
+    @test tempcorr(w, Eo, To) ≈ Eo
+    @test tempcorr(w, Eo, To, To) ≈ Eo
+    
+    Te = 30f0+273.15f0
+    E = Eo
+    Eo = tempcorr(w, E, Te)
+    Two = temperature(r, Eo/(g*I))
+    Tw = temperature(r, E/(g*I))
+    Qo = Eo/g * I
+    Q = E/g * I
+    hAo = Qo / (Two - To)
+    hA = Q / (Tw - Te)
+    @test Eo / E ≈ (Two - To) / (Tw - Te)
+    @test hA ≈ hAo
+
+    
+    Te = 30f0+273.15f0
+    E = Eo
+    Eo = tempcorr(w, E, Te, temperature(w.R))
+    Two = temperature(r, Eo/(g*I))
+    Tw = temperature(r, E/(g*I))
+    Qo = Eo/g * I
+    Q = E/g * I
+    hAo = Qo / (Two - To)
+    hA = Q / (Tw - Te)
+    @test Eo / E ≈ (Two - To) / (Tw - Te)
+    @test hA ≈ hAo
+    
+    # Testing root finding equation
+    @test Hotwire.funroot(x->(x^2-1f0), 0.5f0, 0.6f0) ≈ 1.0 atol=1e-4
+    @test Hotwire.funroot(x->sin(x), π*1.1f0, π*1.02f0) ≈ π atol=1e-4
+
+    # Testing tempcorr for CCASensor{Thermistor}
+    To = 20f0+273.15f0
+    r = Thermistor(1f3, 3300, To)
+    g = 1f0
+    I = 0.2f0
+    w = CCASensor(r, I, g)
+    @test tempcorr(w, 1.0, To) ≈ 1f0
+
+    for Te in [15f0, 30f0] .+ 273.15f0
+        for E in [0.5f0, 1.0f0, 2.0f0]
+            Eo = tempcorr(w, E, Te)
+            Two = temperature(r, Eo/(g*I))
+            Tw = temperature(r, E/(g*I))
+            @test Eo/E ≈ (Two-To) / (Tw - Te) atol=1f-4
+            Qo = Eo/g * I
+            Q = E/g * I
+            hAo = Qo / (Two - To)
+            hA = Q / (Tw - Te)
+            @test hA ≈ hAo atol=1f-4
+        end
+    end
+
+    for Te in [15f0, 30f0] .+ 273.15f0
+        for E in [0.5f0, 1.0f0, 2.0f0]
+            Eo = tempcorr(w, E, Te, To)
+            Two = temperature(r, Eo/(g*I))
+            Tw = temperature(r, E/(g*I))
+            @test Eo/E ≈ (Two-To) / (Tw - Te) atol=1f-4
+            Qo = Eo/g * I
+            Q = E/g * I
+            hAo = Qo / (Two - To)
+            hA = Q / (Tw - Te)
+            @test hA ≈ hAo atol=1f-4
+        end
+    end
+
+    
 
     # Testing calibration curve
     Rw = Thermistor(5e3, 3500, 25.0+273.15);
