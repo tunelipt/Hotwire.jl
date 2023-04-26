@@ -11,7 +11,7 @@ An `AbstractResistor` should implement the following methods:
 
 
 """
-abstract type AbstractResistor end
+abstract type AbstractResistor{T} end
 
 """
     r = Resistor(R0=1e3, α=0.0, T₀=293.15)
@@ -51,7 +51,7 @@ julia> temperature(R, 1010)
 
 ```
 """
-struct Resistor{T} <: AbstractResistor
+struct Resistor{T<:Number} <: AbstractResistor{T}
     "Resistance at reference temperature (Ω)"
     R₀::T
     "Linear resistance coefficient"
@@ -110,7 +110,7 @@ julia> temperature(R, 4163.588)
 ```
 
 """
-struct Thermistor{T} <: AbstractResistor
+struct Thermistor{T<:Number} <: AbstractResistor{T}
     "Reference resistance in Ω at temperature `T₀`"
     R₀::T
     "Thermistor's B coefficient in K "

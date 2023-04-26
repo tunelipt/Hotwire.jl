@@ -48,6 +48,14 @@ using Test
 
     w1 = Wire(1.0, 2.0, 300.0, 0.01)
     @test w == w1
+
+    r = Resistor(1, 1//100, 0)
+    w = CTASensor(r, 2//1)
+    @test r == resistor(w)
+    @test optemperature(w) == 100//1
+    @test overtemp(w) ≈ 100//1
+    @test overheat_ratio(w) ≈ 1//1
+    
     
     r = Thermistor(1e3, 3300, 25.0+273.15)
     Rw = 100.0
@@ -59,6 +67,16 @@ using Test
     @test overtemp(w) ≈ Tw - 298.15
     @test overheat_ratio(w) ≈ a
 
+    r = Thermistor(1f3, 3300, 25f0+273.15f0)
+    Rw = 100f0
+    w = CTASensor(r, Rw)
+    Tw = temperature(r, Rw)
+    a = Rw/1f3 - 1f0
+    @test r == resistor(w)
+    @test optemperature(w) ≈ Tw
+    @test overtemp(w) ≈ Tw - 298.15f0
+    @test overheat_ratio(w) ≈ a
+    
     # CCASensor - not much to do
     r = Resistor(1.0, 0.01, 300.0)
     w = CCASensor(r, 1.0)
