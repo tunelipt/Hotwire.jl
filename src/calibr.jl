@@ -4,15 +4,15 @@ using Statistics
 abstract type AbstractCalibr end
 abstract type AbstractCalibr1d end
 
-struct CalibrCurve{Fit} <: AbstractCalibr1d
+struct CalibrCurve{T,Fit} <: AbstractCalibr1d
     "Anemometer calibration output"
-    E::Vector{Float64}
+    E::Vector{T}
     "Calibration Velocity"
-    U::Vector{Float64}
+    U::Vector{T}
     "Polynomial fitting the calibration curve"
     fit::Fit
     "Reference temperature of the calibration"
-    T0::Float64
+    T0::T
 end
 Base.broadcastable(cal::CalibrCurve) = Ref(cal)
 

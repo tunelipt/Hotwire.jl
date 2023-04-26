@@ -139,6 +139,31 @@ function linearfit(y::AbstractVector{T}, ϕ::AbstractMatrix{T}) where {T}
     return A\b
 end
 
+function polyfit1(y::AbstractVector{T}, x::AbstractVector{T}, P::Integer) where {T}
+    N = length(y)
+    @assert N == length(x)
+    A = zeros(T, P+1, P+1)
+    b = zeros(T, P+1)
+
+    for k in 1:P+1
+        k₁ = k-1
+        for j in k:P+1
+            j₁ = j-1
+            a = zero(T)
+            for i in 1:N
+                a += x[i]^k₁ * x[i]^j₁
+            end
+            A[k,j] = a
+            A[j,k] = a
+        end
+        bb = zero(T)
+        for i in 1:N
+            bb += y[i] * x[i]^k₁
+        end
+        b[k] = bb
+    end
+    return A\b
+end
 
 struct KingLaw{T}
     A::T
@@ -336,7 +361,7 @@ function KingPoly(E::AbstractVector{T}, U::AbstractVector{T}, n::T; N=5) where {
 end
 
 function KingPoly(E::AbstractVector{T}, U::AbstractVector{T};
-                  N=5, n0=one(T)/2, err=1e-8, maxiter=200, r=1.0) where {T}
+                  N=5, n0=one(T)/2, err=sqrt(eps(T)), maxiter=200, r=one(T)) where {T}
 
     M = length(E)
     @assert length(U) == M  "E and U should have the same length"
