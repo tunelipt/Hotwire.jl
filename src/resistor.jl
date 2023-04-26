@@ -1,5 +1,16 @@
 
+"""
+`AbstractResistor`
 
+Base abstract class for defining temperature dependent resistors.
+
+An `AbstractResistor` should implement the following methods:
+
+ * [`resistance`](@ref) calculates the resistance at a specific temperature.
+ * [`temperature`](@ref) calculates the temperature where the resistor attains the specified resistance.
+
+
+"""
 abstract type AbstractResistor end
 
 """
@@ -111,22 +122,53 @@ Base.broadcastable(R::Thermistor) = Ref(R)
 
 
 """
-    resistance(th::AbstractResistor)
-    resistance(th::AbstractResistor, Tc)
+    `resistance(th::AbstractResistor)`
+    `resistance(th::AbstractResistor, T)`
 
-Calculates the resistance for `AbstractResistor`objects` at temperature `Tc`.
-If argumento `Tc` is not provided, the function returns the reference resistance `R0`.
+Calculates the resistance for `AbstractResistor`objects` at temperature `T`.
+If argument `T` is not provided, the function returns the reference resistance `R0`.
 
-See [`Thermistor`](@ref) to see more details of the  type  `Thermistor`. For more details on 
-type `Resistor`, see [`Thermistor`](@ref).
+See [`Thermistor`](@ref) to see more details of the  type  `Thermistor`.
+For more details on type `Resistor`, see [`Thermistor`](@ref).
+
+See also [`temperature`](@ref), [`reftemp`](@ref), [`refresist`](@ref)
 
 """
 resistance(r::AbstractResistor) = r.R₀
 resistance(r::Resistor, T) = r.R₀ * (1.0 + r.α * (T - r.T₀))
 resistance(th::Thermistor, T) = th.R₀ * exp( -th.B * (1/th.T₀ - 1/T ) )
 
+"""
+    `reftemp(R)`
+
+Returns the reference temperature of an [`AbstractResistor`](@ref) object.
+See [`refresist`](@ref) for returning the corresponding reference resistance.
+
+Method [`temperature`](@ref) returns the temperature for a given resistance value
+and methods [`resistance`](@ref) returns the resistance at a given temperature.
+"""
 reftemp(r::AbstractResistor) = r.T₀
 
+"""
+    `refresist(R)`
+
+Returns the reference resistance of an [`AbstractResistor`](@ref) object.
+See [`reftemp`](@ref) for returning corresponding the reference temperature.
+"""
+refresist(r::AbstractResistor) = r.R₀
+
+"""
+    `temperature(R)`
+    `temperature(R, Rx)`
+
+Returns the temperature at which an [`AbstractResistor`](@ref) reaches a resistance
+`Rx`. If `Rx` is not provided, the method returns the reference temperature.
+
+See [`Thermistor`](@ref) to see more details of the  type  `Thermistor`.
+For more details on type `Resistor`, see [`Thermistor`](@ref).
+
+See also [`resistance`](@ref), [`reftemp`](@ref), [`refresist`](@ref)
+"""
 temperature(r::AbstractResistor) = r.T₀
 temperature(r::Resistor, R) = 1/r.α * (R/r.R₀ - 1.0) + r.T₀
 temperature(th::Thermistor, R) = 1/( 1/th.T₀ + 1/th.B * log(R/th.R₀) ) 

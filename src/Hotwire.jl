@@ -3,7 +3,8 @@ module Hotwire
 import Polynomials
 import Polynomials: Polynomial
 
-export Thermistor, Resistor, AbstractResistor, temperature, resistance, reftemp
+export Thermistor, Resistor, AbstractResistor, temperature, resistance
+export reftemp, refresist
 export CTASensor, Wire, resistor, optemperature, overtemp, overheat_ratio, gain
 export AbstractThermalAnemometer
 export CCASensor, current
