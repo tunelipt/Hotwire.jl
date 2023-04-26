@@ -51,16 +51,18 @@ julia> temperature(R, 1010)
 
 ```
 """
-struct Resistor <: AbstractResistor
+struct Resistor{T} <: AbstractResistor
     "Resistance at reference temperature (Ω)"
-    R₀::Float64
+    R₀::T
     "Linear resistance coefficient"
-    α::Float64
+    α::T
     "Reference temperature (K)"
-    T₀::Float64
-    Resistor(R₀=1e3, α=0.0, T₀=293.15) = new(R₀, α, T₀)
+    T₀::T
 end
 Base.broadcastable(R::Resistor) = Ref(R)
+
+Resistor(R₀::T, α::U, T₀::V) where {T,U,V} =
+    Resistor(promote(R₀,α,T₀)...)
 
 
 
@@ -108,16 +110,18 @@ julia> temperature(R, 4163.588)
 ```
 
 """
-struct Thermistor <: AbstractResistor
+struct Thermistor{T} <: AbstractResistor
     "Reference resistance in Ω at temperature `T₀`"
-    R₀::Float64
+    R₀::T
     "Thermistor's B coefficient in K "
-    B::Float64
+    B::T
     "Reference temperature in K"
-    T₀::Float64
-    Thermistor(R₀=5e3, B=0.0, T₀=25.0) = new(R₀, B, T₀)
+    T₀::T
 end
 Base.broadcastable(R::Thermistor) = Ref(R)
+Thermistor(R₀::T, B::U, T₀::V) where {T,U,V} =
+    Thermistor(promote(R₀, B, T₀)...)
+
 
 
 
@@ -135,7 +139,7 @@ See also [`temperature`](@ref), [`reftemp`](@ref), [`refresist`](@ref)
 
 """
 resistance(r::AbstractResistor) = r.R₀
-resistance(r::Resistor, T) = r.R₀ * (1.0 + r.α * (T - r.T₀))
+resistance(r::Resistor, T) = r.R₀ * (1 + r.α * (T - r.T₀))
 resistance(th::Thermistor, T) = th.R₀ * exp( -th.B * (1/th.T₀ - 1/T ) )
 
 """
@@ -170,7 +174,7 @@ For more details on type `Resistor`, see [`Thermistor`](@ref).
 See also [`resistance`](@ref), [`reftemp`](@ref), [`refresist`](@ref)
 """
 temperature(r::AbstractResistor) = r.T₀
-temperature(r::Resistor, R) = 1/r.α * (R/r.R₀ - 1.0) + r.T₀
+temperature(r::Resistor, R) = 1/r.α * (R/r.R₀ - 1) + r.T₀
 temperature(th::Thermistor, R) = 1/( 1/th.T₀ + 1/th.B * log(R/th.R₀) ) 
 temperature(th::Thermistor) = th.T₀ 
 
