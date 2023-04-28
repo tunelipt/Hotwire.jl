@@ -64,7 +64,7 @@ Base.broadcastable(R::Resistor) = Ref(R)
 Resistor(R₀::T, α::U, T₀::V) where {T,U,V} =
     Resistor(promote(R₀,α,T₀)...)
 
-
+Resistor(;R0,a=0.4e-2,T0=20.0) = Resistor(R0,a,T0)
 
 
 """
@@ -122,6 +122,7 @@ Base.broadcastable(R::Thermistor) = Ref(R)
 Thermistor(R₀::T, B::U, T₀::V) where {T,U,V} =
     Thermistor(promote(R₀, B, T₀)...)
 
+Thermistor(;R0=5e3,B=3950.0,T0=298.15) = Thermistor(R0,B,T0)
 
 
 
