@@ -18,26 +18,26 @@ where `a` is the overheat ratio, `Rw` is the operating resistance of the element
 `Ro` is the reference resistance (resistance at reference temperature).
 
 """
-struct CTASensor{T<:Number,ResType <: AbstractResistor{T}} <: AbstractThermalAnemometer
+struct CTASensor{T,U,V,ResType <: AbstractResistor} <: AbstractThermalAnemometer
     "Element whose resistance changes with temperature"
     R::ResType
     "Operating temperature of the sensor"
     Rw::T
     "Reference temperature"
-    T₀::T
+    T₀::U
     "Output gain"
-    gain::T
+    gain::V
     
 end
 Base.broadcastable(sensor::CTASensor) = Ref(sensor)
 
 
-CTASensor(R::ResType, Rw; gain=1) where {T,ResType <: AbstractResistor{T}} =
-    CTASensor(R, convert(T,Rw), temperature(R), convert(T,gain))
+CTASensor(R::ResType, Rw; gain=1) where {ResType <: AbstractResistor} =
+    CTASensor(R, Rw, temperature(R), gain)
 
 
-CTASensor(R::ResType, Rw, T₀; gain=1) where {T,ResType <: AbstractResistor{T}} =
-    CTASensor(R, Rw, T₀, convert(T,gain))
+CTASensor(R::ResType, Rw, T₀; gain=1) where {ResType <: AbstractResistor} =
+    CTASensor(R, Rw, T₀, gain)
 
 
 Wire(R₀, Rw, T₀=293.15, α=0.36e-3; gain=1) = CTASensor(Resistor(R₀, α, T₀), Rw, T₀; gain=gain)
@@ -73,18 +73,18 @@ A structure to manage constant current anemometer sensors (CCA)
 
 
 """
-struct CCASensor{T<:Number, ResType<:AbstractResistor{T}} <: AbstractThermalAnemometer
+struct CCASensor{T,U,V,ResType<:AbstractResistor} <: AbstractThermalAnemometer
     "Element whose resistance changes with temperature"
     R::ResType
     "Operating current in Ampere"
     I::T
     "Output gain"
-    gain::T
+    gain::U
     "Reference temperature"
-    T₀::T
+    T₀::V
 end
-CCASensor(R::ResType, I, T0=reftemp(R); gain=1.0) where {T,ResType<:AbstractResistor{T}} =
-    CCASensor(R,convert(T,I),convert(T,gain),convert(T,T0))
+CCASensor(R::ResType, I, T0=reftemp(R); gain=1) where {ResType<:AbstractResistor} =
+    CCASensor(R, I, gain, T0)
 Base.broadcastable(sensor::CCASensor) = Ref(sensor)
 
 "Current in A flowing through the CCA"

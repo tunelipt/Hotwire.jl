@@ -79,13 +79,13 @@ If between the resistance element and the flow is an insulator (very common in t
 where ``Q⋅β`` corrects the sensor temperature (``Tw``) to the outer surface mean temperature.
 
 """
-function tempcorr(w::CCASensor{T,Resistor{T}}, E, temp, T0) where {T}
+function tempcorr(w::CCASensor{Resistor}, E, temp, T0)
 
     α = w.R.α
     return E / (1 + α*(temp - T0))
 end
 
-tempcorr(w::CCASensor{T,Resistor{T}}, E, temp) where {T} =
+tempcorr(w::CCASensor{Resistor}, E, temp) =
     tempcorr(w, E, temp, temperature(w.R))
 
 function funroot(f, x1, x2, eps=1e-7, maxiter=100)
@@ -119,8 +119,9 @@ function funroot(f, x1, x2, eps=1e-7, maxiter=100)
 end
 
 
-function tempcorr(w::CCASensor{T}, E, temp, T0; eps=sqrt(eps(T)), maxiter=100) where {T}
-
+function tempcorr(w::CCASensor, E, temp, T0;
+                  eps=sqrt(eps(1.0)), maxiter=100)
+    
     R = w.R
     g = gain(w)
     I = current(w)
@@ -134,7 +135,7 @@ function tempcorr(w::CCASensor{T}, E, temp, T0; eps=sqrt(eps(T)), maxiter=100) w
     return Eo
 end
 
-tempcorr(w::CCASensor{T}, E, temp; eps=sqrt(eps(T)), maxiter=100) where {T} =
+tempcorr(w::CCASensor, E, temp; eps=sqrt(eps(1.0)), maxiter=100) =
     tempcorr(w, E, temp, temperature(w.R), eps=eps, maxiter=maxiter)
 
 

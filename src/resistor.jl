@@ -11,7 +11,7 @@ An `AbstractResistor` should implement the following methods:
 
 
 """
-abstract type AbstractResistor{T} end
+abstract type AbstractResistor end
 
 """
     r = Resistor(R0=1e3, α=0.0, T₀=293.15)
@@ -51,18 +51,16 @@ julia> temperature(R, 1010)
 
 ```
 """
-struct Resistor{T<:Number} <: AbstractResistor{T}
+struct Resistor{T,U,V} <: AbstractResistor
     "Resistance at reference temperature (Ω)"
     R₀::T
     "Linear resistance coefficient"
-    α::T
+    α::U
     "Reference temperature (K)"
-    T₀::T
+    T₀::V
 end
 Base.broadcastable(R::Resistor) = Ref(R)
 
-Resistor(R₀::T, α::U, T₀::V) where {T,U,V} =
-    Resistor(promote(R₀,α,T₀)...)
 
 Resistor(;R0,a=0.4e-2,T0=20.0) = Resistor(R0,a,T0)
 
@@ -110,17 +108,15 @@ julia> temperature(R, 4163.588)
 ```
 
 """
-struct Thermistor{T<:Number} <: AbstractResistor{T}
+struct Thermistor{T,U,V} <: AbstractResistor
     "Reference resistance in Ω at temperature `T₀`"
     R₀::T
     "Thermistor's B coefficient in K "
-    B::T
+    B::U
     "Reference temperature in K"
-    T₀::T
+    T₀::V
 end
 Base.broadcastable(R::Thermistor) = Ref(R)
-Thermistor(R₀::T, B::U, T₀::V) where {T,U,V} =
-    Thermistor(promote(R₀, B, T₀)...)
 
 Thermistor(;R0=5e3,B=3950.0,T0=298.15) = Thermistor(R0,B,T0)
 
