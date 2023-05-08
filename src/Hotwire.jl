@@ -20,6 +20,7 @@ export velocity, velocity!
 export dircalibr
 include("resistor.jl")
 include("wire.jl")
+include("fluid.jl")
 include("tempcorr.jl")
 include("fit.jl")
 include("calibr.jl")
