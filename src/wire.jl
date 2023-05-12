@@ -1,5 +1,8 @@
 
 abstract type AbstractThermalAnemometer end
+abstract type AbstractConstTempAnemometer <: AbstractThermalAnemometer end
+abstract type AbstractConstCurrAnemometer <: AbstractThermalAnemometer end
+
 
 """
     CTASensor(R, Rw)
@@ -18,7 +21,7 @@ where `a` is the overheat ratio, `Rw` is the operating resistance of the element
 `Ro` is the reference resistance (resistance at reference temperature).
 
 """
-struct CTASensor{T,U,V,ResType <: AbstractResistor} <: AbstractThermalAnemometer
+struct CTASensor{T,U,V,ResType <: AbstractResistor} <: AbstractConstTempAnemometer
     "Element whose resistance changes with temperature"
     R::ResType
     "Operating temperature of the sensor"
@@ -73,7 +76,7 @@ A structure to manage constant current anemometer sensors (CCA)
 
 
 """
-struct CCASensor{T,U,V,ResType<:AbstractResistor} <: AbstractThermalAnemometer
+struct CCASensor{T,U,V,ResType<:AbstractResistor} <: AbstractConstCurrAnemometer
     "Element whose resistance changes with temperature"
     R::ResType
     "Operating current in Ampere"
