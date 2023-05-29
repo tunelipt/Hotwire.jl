@@ -7,6 +7,7 @@ abstract type AbstractCCACorrection <: AbstractAnemometerCorrection
 
 
 struct CTACorrection <: AbstractCCACorrection
-
+    
 end
+
 

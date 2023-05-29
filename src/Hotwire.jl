@@ -19,7 +19,8 @@ export Probe1d, Probe2d, Probe3d
 export velocity, velocity!
 export dircalibr
 include("resistor.jl")
-include("wire.jl")
+include("ctasensor.jl")
+#include("wire.jl")
 include("fluid.jl")
 include("tempcorr.jl")
 include("fit.jl")
