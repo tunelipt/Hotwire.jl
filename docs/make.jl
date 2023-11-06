@@ -1,13 +1,13 @@
-using Lixo
+using Hotwire
 using Documenter
 
-DocMeta.setdocmeta!(Lixo, :DocTestSetup, :(using Lixo); recursive=true)
+DocMeta.setdocmeta!(Hotwire, :DocTestSetup, :(using Hotwire); recursive=true)
 
 makedocs(;
-    modules=[Lixo],
+    modules=[Hotwire],
     authors="Paulo José Saiz Jabardo",
-    repo="https://github.com/pjsjipt/Lixo.jl/blob/{commit}{path}#{line}",
-    sitename="Lixo.jl",
+    repo="https://github.com/tunelipt/Hotwire.jl/blob/{commit}{path}#{line}",
+    sitename="Hotwire.jl",
     format=Documenter.HTML(;
         prettyurls=get(ENV, "CI", "false") == "true",
         edit_link="main",

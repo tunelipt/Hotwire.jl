@@ -18,9 +18,22 @@ export HWCable, HWSupport, HWBridge
 export Probe1d, Probe2d, Probe3d
 export velocity, velocity!
 export dircalibr
+
+
+abstract type AbstractThermalAnemometer end
+abstract type AbstractCTA <: AbstractThermalAnemometer end
+abstract type AbstractCCA <: AbstractThermalAnemometer end
+
+"Resistor element of a thermal anemometer sensor"
+resistor(w::AbstractThermalAnemometer) = w.R
+
+"Gain of anemometer output"
+gain(w::AbstractThermalAnemometer) = w.gain
+
+
 include("resistor.jl")
 include("ctasensor.jl")
-#include("wire.jl")
+include("wire.jl")
 include("fluid.jl")
 include("tempcorr.jl")
 include("fit.jl")
