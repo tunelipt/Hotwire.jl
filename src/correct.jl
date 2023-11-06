@@ -6,8 +6,30 @@ abstract type AbstractCTACorrection <: AbstractAnemometerCorrection
 abstract type AbstractCCACorrection <: AbstractAnemometerCorrection
 
 
-struct CTACorrection <: AbstractCCACorrection
-    
+struct TempCorrection{T,U,V} <: AbstractCTACorrection
+    Rw::T
+    Tw::U
+    Ta::V
 end
 
+
+function correct(Rsens::AbstractResistor, C::TempCorrection; T=C.Ta, R=C.Rw, ...)
+    Tw1 = temperature(Rsens, R)
+    return sqrt(C.Rw/R * (R.tw - R.Ta) / (Tw1 - T))
+end
+
+struct WireCorrection{T,U,V,W,X,Y,Z} <: AbstractCTACorrection
+    Rw::T
+    Tw::U
+    Ta::V
+    ρ::W
+    μ::X
+    k::Y
+    Pr::Z
+    n
+end
+
+function correct(Rsens::AbstractResistor, C::WireCorrection;
+                 R=C.Rw, T=C.Ta, rho=C.ρ, mu=C.μ, k=C.k, Pr=C.Pr)
+                 
 
