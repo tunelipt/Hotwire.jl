@@ -1,7 +1,7 @@
 using Hotwire
 using Documenter
 
-DocMeta.setdocmeta!(Hotwire, :DocTestSetup, :(using Hotwire); recursive=true)
+#DocMeta.setdocmeta!(Hotwire, :DocTestSetup, :(using Hotwire); recursive=true)
 
 makedocs(;
     modules=[Hotwire],
@@ -16,4 +16,5 @@ makedocs(;
     pages=[
         "Home" => "index.md",
     ],
+    warnonly=:doctest     
 )

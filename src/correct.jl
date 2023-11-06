@@ -13,8 +13,13 @@ struct TempCorrection{T,U,V} <: AbstractCTACorrection
 end
 
 
-function correct(Rsens::AbstractResistor, C::TempCorrection; T=C.Ta, R=C.Rw, ...)
-    Tw1 = temperature(Rsens, R)
+function correct(cta::CTASensor, E; T=C.Ta, R=C.Rw, ...) where
+    if R != C.Rw
+        Tw1 = temperature(Rsens, R)
+    else
+        Tw1 = C.Tw
+    end
+    
     return sqrt(C.Rw/R * (R.tw - R.Ta) / (Tw1 - T))
 end
 

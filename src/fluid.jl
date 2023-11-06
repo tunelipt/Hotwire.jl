@@ -1,6 +1,8 @@
 export AbstractFluidProp, ConstPropFluid, IdealGas, Air
 
 
+const Ru = 8314.46261815324 # J/(K.kmol)
+
 abstract type AbstractFluidProp end
 
 struct ConstPropFluid{T,U,V,W} <: AbstractFluidProp
@@ -21,7 +23,7 @@ end
 Models a fluid with constant properties.
 
 """
-ConstPropFluid(;rho=1.1, mu=1.5e-5, k=26e-3, Pr=0.7) =
+ConstPropFluid(;rho=1.1, mu=1.8e-5, k=26e-3, Pr=0.7) =
     ConstPropFluid(rho, mu, k, Pr)
 
 fluidprops(x::ConstPropFluid, T, P) = x.ρ, x.μ, x.k, x.Pr
@@ -47,7 +49,6 @@ function airvisc(T,P)
     μ₁ * (T/T₁)^1.5 * (T₁ + S) / (T + S)
 end
 
-const Ru =  8314.459848
 const Mair = 28.96518
 
 
