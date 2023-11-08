@@ -33,8 +33,9 @@ gain(w::AbstractThermalAnemometer) = w.gain
 
 include("resistor.jl")
 #include("ctasensor.jl")
+include("correct.jl")
 #include("wire.jl")
-#include("fluid.jl")
+include("fluid.jl")
 #include("tempcorr.jl")
 #include("fit.jl")
 #include("calibr.jl")

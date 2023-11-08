@@ -49,12 +49,14 @@ function airvisc(T,P)
     μ₁ * (T/T₁)^1.5 * (T₁ + S) / (T + S)
 end
 
+
 const Mair = 28.96518
 
 
 const Ckair = [-1.433633e-4, 1.0184e-4, -4.8574e-8, 1.5207e-11]
 const Cpair = [3.56839620E+00, -6.78729429E-04, 1.55371476E-06, 
                -3.29937060E-12, -4.66395387E-13]
+
 
 aircond(T,P) = evalpoly(T, Ckair) + 0
 
