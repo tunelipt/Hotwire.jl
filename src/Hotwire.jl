@@ -5,7 +5,7 @@ import Polynomials: Polynomial
 
 export Thermistor, Resistor, AbstractResistor, temperature, resistance
 export reftemp, refresist
-export CTASensor, Wire, resistor, optemperature, overtemp, overheat_ratio, gain
+export CTASensor, Wire, resistor, overheatratio, overtemp, gain
 export AbstractThermalAnemometer
 export CCASensor, current
 export tempcorr

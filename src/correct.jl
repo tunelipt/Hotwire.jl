@@ -18,25 +18,7 @@ struct TempCorrect{T<:AbstractFloat} <: AbstractAnemCorrect
 end
 
 
-
-function anemcorrect(corr::TempCorrect, Rsens::AbstractResistor, E,
-                     T, P=0, R=corr.Rw, x=0)
-    Rwc = corr.Rw
-    if R != Rwc
-        Rw = R
-        Tw = temperature(Rsens, R)
-    else
-        Rw = Rwc
-        Tw = corr.Tw
-    end
-
-    return E * anemcorrectfactor(corr.Ta, corr.Tw, Rwc, T, Tw, Rw)
-end
-
-function anemcorrect(corr::TempCorrect, Rsens::AbstractResistor, E;
-                     T=corr.Ta, R=corr.Rw, kw...)
-    return E * anemcorrectfactor(corr, Rsens, T, 0, R, 0)
-end
+anemcorrect(corr::TempCorrect, E, T, Rw, Tw, args...) = E * anemcorrectfactor(corr.Ta, corr.Tw, corr.Rw, T, Tw, Rw)
 
     
 struct WireCorrect{T<:AbstractFloat} <: AbstractAnemCorrect
@@ -56,25 +38,8 @@ struct WireCorrect{T<:AbstractFloat} <: AbstractAnemCorrect
     n::T
 end
 
-function anemcorrect(corr::WireCorrect, Rsens::AbstractResistor, E, 
-                     T=corr.Ta, P=corr.Pa, R=corr.Rw, x=corr.fluid)
-    Rwc = corr.Rw
-    Twc = corr.Tw
-    Tac = corr.Ta
-
-    if R != Rwc
-        Rw = R
-        Tw = temperature(Rsens, R)
-    else
-        Rw = Rwc
-        Tw = Twc
-    end
-
-    ρ, μ, k, Pr = fluidprops(fluid, T, P)
-
-    kPrn = k * Pr^corr.n
-
-    return sqrt(corr.kPrn/kPrn) * anemcorrectfactor(Tac, Twc, Rwc, T, Tw, Rw)
+function anemcorrect(corr::WireCorrect, E, T, Rw, Tw, ρ, μ, k, Pr, args...)
+    return sqrt(corr.kPrn/kPrn) * anemcorrectfactor(corr.Ta, corr.Tw, corr.Rw, T, Tw, Rw)
 end
 
 
@@ -122,23 +87,15 @@ function mf58correct(Rsens ;R=1e2, T=298.15, P=93e3, n=1/3, N=2, beta=0.2, fluid
     c2 = N * sqrt(γ*kf*Af*P/D)
     return GlassbeadCorrect(Rw, Tw, T, P, ν, ϕ, n, β, c1, c2)
 end   
-    
-function anemcorrect(corr::GlassbeadCorrect, Rsens::AbstractResistor, E, 
-                     T, P=corr.Pa, R=corr.Rw, x=Air)
+
+function anemcorrect(corr::GlassbeadCorrect, E, Rw, Tw, ρ, μ, k, Pr, args...)
     
     Rwc = corr.Rw
     Twc = corr.Tw
     Tac = corr.Ta
-    if R != Rwc
-        Rw = R
-        Tw = temperature(Rsens, R)
-    else
-        Rw = Rwc
-        Tw = Twc
-    end
+
     β = corr.β
     ϕc = corr.ϕ
-    ρ, μ, k, Pr = fluidprops(x, T, P)
     ϕ = k * Pr^corr.n
     
     Y = E*E / (Rw * (Tw - T))
@@ -158,6 +115,5 @@ function anemcorrect(corr::GlassbeadCorrect, Rsens::AbstractResistor, E,
     
 end
 
-anemcorrect(corr::GlassbeadCorrect, Rsens::AbstractResistor, E;
-            T=corr.Ta, P=corr.Pa, R=corr.Rw, x=Air) = anemcorrect(corr, Rsens, E,
-                                                                  T, P, R, x)
+
+function velocity(cta::CTASensor, E; T=
