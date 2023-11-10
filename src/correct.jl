@@ -1,6 +1,12 @@
-# Temperature/Pressure/etc correction
+-# Temperature/Pressure/etc correction
 
 abstract type AbstractAnemCorrect end
+
+
+resistance(c::AbstractAnemCorrect) = c.Rw
+temperature(c::AbstractAnemCorrect) = c.Tw
+reftemp(c::AbstractAnemCorrect) = c.T
+flowfluid(c::AbstractAnemCorrect) = c.fluid
 
 
 anemcorrectfactor(Tac, Twc, Rwc, Ta, Tw, Rw) = sqrt(Rwc/Rw * (Twc-Ta) / (Tw-Ta))
@@ -16,7 +22,6 @@ struct TempCorrect{T<:AbstractFloat} <: AbstractAnemCorrect
     "Calibration kinematic viscosity"
     ν::T
 end
-
 
 anemcorrect(corr::TempCorrect, E, T, Rw, Tw, args...) = E * anemcorrectfactor(corr.Ta, corr.Tw, corr.Rw, T, Tw, Rw)
 
@@ -115,5 +120,3 @@ function anemcorrect(corr::GlassbeadCorrect, E, Rw, Tw, ρ, μ, k, Pr, args...)
     
 end
 
-
-function velocity(cta::CTASensor, E; T=

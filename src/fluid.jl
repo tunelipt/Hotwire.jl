@@ -1,11 +1,19 @@
-export AbstractFluidProp, ConstPropFluid, IdealGas, Air
+export ConstPropFluid, heatcond, prandtl, viscosity, kinvisc, density, specheat
+export AIR, IdealGas
 
 
 const Ru = 8314.46261815324 # J/(K.kmol)
 
-abstract type AbstractFluidProp end
+const M_Air   = 28.96518
+const M_N₂    = 28.01340
+const M_C₃H₈  = 44.09562
+const M_CO₂   = 44.00980 
+const M_He    =  4.00205
+const M_O₂    = 31.99880
+const M_H₂    =  2.01588
 
-struct ConstPropFluid{T,U,V,W} <: AbstractFluidProp
+
+struct ConstPropFluid{T,U,V,W}
     "Density of fluid in kg/m³"
     ρ::T
     "Dynamic Viscosity of fluid in Pa⋅s"
@@ -13,8 +21,27 @@ struct ConstPropFluid{T,U,V,W} <: AbstractFluidProp
     "Thermal conductivity of fluid in W/m⋅K"
     k::V
     "Prandtl Number of fluid"
-    Pr::W
+    cp::W
 end
+
+"Computes the heat conductivity of a fluid in W/mK"
+heatcond(x::ConstPropFluid, T, P) = x.k
+
+"Computes the Prandtl number of a fluid"
+prandtl(x::ConstPropFluid, T, P) = x.cp * x.μ / x.k
+
+"Computes the dynamic viscosity of a fluid in Pa⋅s"
+viscosity(x::ConstPropFluid, T, P) = x.μ
+
+"Computes the kinematic viscosity of a fluid in m²/s"
+kinvisc(x::ConstPropFluid, T, P) = x.μ / x.ρ
+
+"Computes the density of a fluid in kg/m³"
+density(x::ConstPropFluid, T, P) = x.ρ
+
+"COmputes the specific heat of a fluid in J/Kg⋅K"
+sepcheat(x::ConstPropFluid, T, P) = x.cp
+
 
 """
 `ConstPropFluidProp(ρ, μ, k, Pr)
@@ -23,77 +50,73 @@ end
 Models a fluid with constant properties.
 
 """
-ConstPropFluid(;rho=1.1, mu=1.8e-5, k=26e-3, Pr=0.7) =
-    ConstPropFluid(rho, mu, k, Pr)
-
-fluidprops(x::ConstPropFluid, T, P) = x.ρ, x.μ, x.k, x.Pr
+ConstPropFluid(;rho=1.1, mu=1.8e-5, k=26e-3, cp=1005.0) =
+    ConstPropFluid(rho, mu, k, cp)
 
 
-struct IdealGas{U,V} <: AbstractFluidProp
-    R::U
-    propfun::V
-end
-
-function IdealGas(;mw=28.96518, mu=1.813e-5, k=25.87e-3, Pr=0.707)
-    R = Ru/mw
-    IdealGas(Rg, (T,P)->(P/(R*T), mu, k, Pr))
-end
-
-
-fluidprops(x::IdealGas, T, P) = x.propfun(x.R, T, P)
-
-function airvisc(T,P)
-    S = 113
-    μ₁ = 18.13e-6
-    T₁ = 293.15
-    μ₁ * (T/T₁)^1.5 * (T₁ + S) / (T + S)
-end
-
-
-const Mair = 28.96518
-
-
-const Ckair = [-1.433633e-4, 1.0184e-4, -4.8574e-8, 1.5207e-11]
-const Cpair = [3.56839620E+00, -6.78729429E-04, 1.55371476E-06, 
-               -3.29937060E-12, -4.66395387E-13]
-
-
-aircond(T,P) = evalpoly(T, Ckair) + 0
-
-    
-airspecheat(T,P) = evalpoly(T, Cpair) * Ru/Mair
-
-
-
-function airprops(R, T, P)
-    ρ = P / (R*T)
-    μ = airvisc(T,P)
-    k = aircond(T,P)
-    cₚ = airspecheat(T,P) 
-    Pr = cₚ * μ / k
-    return ρ,μ,k,Pr
+struct IdealGas{U,V,W,X} 
+    M::U
+    c_cp::V
+    c_μ::W
+    c_k::X
 end
 
 
 
-#=
-Burcat data for air
+specheat(x::IdealGas, T, P) = evalpoly(T, x.c_cp)
+viscosity(x::IdealGas, T, P) = evalpoly(T, x.c_μ)
+heatcond(x::IdealGas, T, P) = evalpoly(T, x.c_k)
+prandtl(x::IdealGas, T, P) = specheat(x, T, P)*viscosity(x, T, P)/heatcond(x, T, P)
+density(x::IdealGas, T, P) = P * x.M / (Ru*T)
+kinvisc(x::IdealGas, T, P) = viscosity(x, T, P) / density(x, T, P)
 
-132259-10-0
-AIR calculated from ingredients %N2=78.084 %O2=20.9476 %Ar=0.9365 %CO2=0.0319
-This format is not capable of automatic formula calculation for this species!!!
-See New NASA Polynomials REF=McBride & Gordon NASA RP-1271 1992 Sructure
-for automatic formula calculation should be:
-N 1.56O 0.42AR 0.01C 0.00 Max Lst Sq Error Cp @ 2500 K 0.19%
-AIR L 9/95 WARNING! 0.G 200.000 6000.000 B 28.96518 1
-3.08792717E+00 1.24597184E-03-4.23718945E-07 6.74774789E-11-3.97076972E-15 2
--9.95262755E+02 5.95960930E+00 3.56839620E+00-6.78729429E-04 1.55371476E-06 3
--3.29937060E-12-4.66395387E-13-1.06234659E+03 3.71582965E+00-1.50965000E+01 4
-=#
+
+
+
+
+
+
+
+const c_cₚ_C₃H₈ = Ru/M_C₃H₈ .* (4.21093013E+00, 1.70886504E-03, 7.06530164E-05,
+                               -9.20060565E-08, 3.64618453E-11)
+const c_μ_C₃H₈  = (-2.62714e-7, 2.87582e-8, 8.02292e-13, -1.00381e-14, 3.67025e-18)
+const c_k_C₃H₈  = (-0.00190848, 2.62236e-5, 1.37295e-7, 8.1589e-12, -2.96982e-15)
+
+
+const c_cₚ_Air = Ru/M_Air .* (3.56839620E+00, -6.78729429E-04, 1.55371476E-06,
+                             -3.29937060E-12, -4.66395387E-13)
+const c_μ_Air = (-9.87746e-8, 7.85222e-8, -6.67915e-11, 4.13539e-14)
+const c_k_Air = (5.88994e-5, 9.54173e-5, -2.39694e-8, -1.12551e-11, 4.85253e-15)
+
+
+const c_cₚ_N₂ = Ru/M_N₂ .* (3.53100528E+00, -1.23660988E-04, -5.02999433E-07,
+                          2.43530612E-09, -1.40881235E-12)
+const c_μ_N₂ = (-5.26692e-7, 8.28046e-8, -9.36255e-11, 8.18452e-14, -3.1254e-17,
+                -1.01669e-17)
+const c_k_N₂ = (-0.0006241, 0.000109906, -9.13581e-8, 7.26363e-11, -2.73799e-14)
+
+const c_cₚ_CO₂ = Ru/M_CO₂ .* (0.23568130E+01, 0.89841299E-02,-0.71220632E-05,
+                             0.24573008E-08,-0.14288548E-12)
+
+
+const c_cₚ_He  = (Ru / M_He * 2.50000000E+00, )
+const c_μ_He = (4.09517e-6, 5.55975e-8, 2.90184e-12, -5.28468e-14, 3.6016e-17)
+const c_k_He = (0.0301597, 0.000452246, -1.56078e-7, 2.31013e-11)
+
+const c_cₚ_O₂ = Ru / M_O₂ .* (3.78245636E+00, -2.99673416E-03,  9.84730201E-06, 
+                             -9.68129509E-09, 3.24372837E-12)
+const c_μ_O₂ = (-9.66187e-7, 9.56013e-8, -9.94813e-11, 8.15837e-14, -2.95515e-17)
+const c_k_O₂ = (-0.0018068, 0.000123112, -1.45337e-7, 1.83738e-10, -9.52034e-14)
+
+
+const c_cₚ_H₂  = Ru / M_He .* (2.34433112E+00, 7.98052075E-03,-1.94781510E-05,
+                              2.01572094E-08, -7.37611761E-12)
+
 
        
-const Air = IdealGas(Ru/Mair, airprops)
-
+const AIR = IdealGas(M_Air, c_cₚ_Air, c_μ_Air, c_k_Air)
+const NITROGEN = IdealGas(M_N₂, c_cₚ_N₂, c_μ_N₂, c_k_N₂)
+const OXYGEN = IdealGas(M_O₂,  c_cₚ_O₂, c_μ_O₂, c_k_O₂)
 
 
 
