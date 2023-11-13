@@ -1,5 +1,9 @@
 export ConstPropFluid, heatcond, prandtl, viscosity, kinvisc, density, specheat
-export AIR, IdealGas
+export AIR, HELIUM, NITROGEN, C3H8, OXYGEN, IdealGas
+
+import Polynomials: ImmutablePolynomial
+
+const IPoly = ImmutablePolynomial
 
 
 const Ru = 8314.46261815324 # J/(K.kmol)
@@ -12,7 +16,13 @@ const M_He    =  4.00205
 const M_O₂    = 31.99880
 const M_H₂    =  2.01588
 
+"""
+`ConstPropFluid(rho, mu, k, cp)`
 
+Creates a fluid with constant properties. The user should provide
+the values of density, dynamic viscosity, thermal conductivity
+and specific heat, all in SI units.
+"""
 struct ConstPropFluid{T,U,V,W}
     "Density of fluid in kg/m³"
     ρ::T
@@ -25,22 +35,26 @@ struct ConstPropFluid{T,U,V,W}
 end
 
 "Computes the heat conductivity of a fluid in W/mK"
-heatcond(x::ConstPropFluid, T, P) = x.k
-
-"Computes the Prandtl number of a fluid"
-prandtl(x::ConstPropFluid, T, P) = x.cp * x.μ / x.k
+heatcond(x::ConstPropFluid, T, P=101325.0) = x.k
 
 "Computes the dynamic viscosity of a fluid in Pa⋅s"
-viscosity(x::ConstPropFluid, T, P) = x.μ
-
-"Computes the kinematic viscosity of a fluid in m²/s"
-kinvisc(x::ConstPropFluid, T, P) = x.μ / x.ρ
+viscosity(x::ConstPropFluid, T, P=101325.0) = x.μ
 
 "Computes the density of a fluid in kg/m³"
-density(x::ConstPropFluid, T, P) = x.ρ
+density(x::ConstPropFluid, T, P=101325.0) = x.ρ
 
 "COmputes the specific heat of a fluid in J/Kg⋅K"
-sepcheat(x::ConstPropFluid, T, P) = x.cp
+specheat(x::ConstPropFluid, T, P=101325.0) = x.cp
+
+
+
+
+
+"Computes the Prandtl number of a fluid"
+prandtl(x, T, P=101325.0) = specheat(x,T,P) * viscosity(x,T,P) / heatcond(x,T,P)
+
+"Computes the kinematic viscosity of a fluid in m²/s"
+kinvisc(x, T, P=101325.0) = viscosity(x,T,P) / density(x,T,P)
 
 
 """
@@ -54,21 +68,29 @@ ConstPropFluid(;rho=1.1, mu=1.8e-5, k=26e-3, cp=1005.0) =
     ConstPropFluid(rho, mu, k, cp)
 
 
-struct IdealGas{U,V,W,X} 
+"""
+    `IdealGas(M, c_cp, c_mu, c_k)`
+
+Creates an `IdealGas` object that is used to compute thermodynamic and transport
+properties of ideal gases. The main parameter is the mean molecular mass of the gas
+in kg/kmol.
+
+Functions for calculating the specific heat at constant pressure, dynamic
+viscosity and 
+"""
+struct IdealGas{U,FV,FW,FX} 
     M::U
-    c_cp::V
-    c_μ::W
-    c_k::X
+    cpfun::FV
+    mufun::FW
+    kfun::FX
 end
 
 
 
-specheat(x::IdealGas, T, P) = evalpoly(T, x.c_cp)
-viscosity(x::IdealGas, T, P) = evalpoly(T, x.c_μ)
-heatcond(x::IdealGas, T, P) = evalpoly(T, x.c_k)
-prandtl(x::IdealGas, T, P) = specheat(x, T, P)*viscosity(x, T, P)/heatcond(x, T, P)
-density(x::IdealGas, T, P) = P * x.M / (Ru*T)
-kinvisc(x::IdealGas, T, P) = viscosity(x, T, P) / density(x, T, P)
+specheat(x::IdealGas, T, P=101325.0) = x.cpfun(T) 
+viscosity(x::IdealGas, T, P=101325.0) = x.mufun(T)
+heatcond(x::IdealGas, T, P=101325.0) = x.kfun(T)
+density(x::IdealGas, T, P=101325.0) = P * x.M / (Ru*T)
 
 
 
@@ -114,11 +136,12 @@ const c_cₚ_H₂  = Ru / M_He .* (2.34433112E+00, 7.98052075E-03,-1.94781510E-0
 
 
        
-const AIR = IdealGas(M_Air, c_cₚ_Air, c_μ_Air, c_k_Air)
-const NITROGEN = IdealGas(M_N₂, c_cₚ_N₂, c_μ_N₂, c_k_N₂)
-const OXYGEN = IdealGas(M_O₂,  c_cₚ_O₂, c_μ_O₂, c_k_O₂)
-
-
+const AIR = IdealGas(M_Air, IPoly(c_cₚ_Air,:T), IPoly(c_μ_Air,:T), IPoly(c_k_Air,:T))
+const NITROGEN = IdealGas(M_N₂, IPoly(c_cₚ_N₂,:T), IPoly(c_μ_N₂,:T), IPoly(c_k_N₂,:T))
+const OXYGEN = IdealGas(M_O₂,  IPoly(c_cₚ_O₂,:T), IPoly(c_μ_O₂,:T), IPoly(c_k_O₂,:T))
+const HELIUM = IdealGas(M_He, IPoly(c_cₚ_He,:T), IPoly(c_μ_He,:T), IPoly(c_k_He,:T))
+const C3H8 = IdealGas(M_C₃H₈, IPoly(c_cₚ_C₃H₈,:T), IPoly(c_μ_C₃H₈,:T),
+                      IPoly(c_k_C₃H₈,:T))
 
 
 

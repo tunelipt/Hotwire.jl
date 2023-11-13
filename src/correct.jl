@@ -9,66 +9,74 @@ reftemp(c::AbstractAnemCorrect) = c.T
 flowfluid(c::AbstractAnemCorrect) = c.fluid
 
 
-anemcorrectfactor(Tac, Twc, Rwc, Ta, Tw, Rw) = sqrt(Rwc/Rw * (Twc-Ta) / (Tw-Ta))
+anemcorrectfactor(cal::AbstractAnemCorrect, Tw, Rw, T) =
+    sqrt(resistance(cal)/Rw * (temperature(cal)-reftemp(cal)) / (Tw-T))
 
 
-struct TempCorrect{T<:AbstractFloat} <: AbstractAnemCorrect
+struct TempCorrect{U<:AbstractFloat,Fluid} <: AbstractAnemCorrect
     "Calibration operating resistance"
-    Rw::T
+    Rw::U
     "Calibration operating resistance temperature"
-    Tw::T
+    Tw::U
     "Calibration temperature"
-    Ta::T
+    T::U
+    "Calibration fluid"
+    fluid::Fluid
     "Calibration kinematic viscosity"
-    ν::T
+    ν::U
 end
 
-anemcorrect(corr::TempCorrect, E, T, Rw, Tw, args...) = E * anemcorrectfactor(corr.Ta, corr.Tw, corr.Rw, T, Tw, Rw)
+anemcorrect(cal::TempCorrect, E, meas::TempCorrect) =
+    E * anemcorrectfactor(cal, temperature(meas), resistance(meas), reftemp(meas))
+
+anemcorrect(cal::TempCorrect, E, T, P, x, Rw, Tw) =
+    E * anemcorrect(cal, Tw, Rw, T)
 
     
-struct WireCorrect{T<:AbstractFloat} <: AbstractAnemCorrect
+struct WireCorrect{U<:AbstractFloat,Fluid} <: AbstractAnemCorrect
     "Calibration operating resistance"
-    Rw::T
+    Rw::U
     "Calibration operating resistance temperature"
-    Tw::T
+    Tw::U
     "Calibration temperature"
-    Ta::T
-    "Calibration pressure"
-    Pa::T
+    T::U
+    "Calibration Fluid"
+    fluid::Fluid
     "Calibration kinematic viscosity"
-    ν::T
+    ν::U
     "Calibration k⋅Prⁿ"
-    kPrn::T
+    ϕ::U
     "Prandtl number exponent"
-    n::T
+    n::U
 end
 
-function anemcorrect(corr::WireCorrect, E, T, Rw, Tw, ρ, μ, k, Pr, args...)
-    return sqrt(corr.kPrn/kPrn) * anemcorrectfactor(corr.Ta, corr.Tw, corr.Rw, T, Tw, Rw)
+function anemcorrect(cal::WireCorrect, E, meas::WireCorrect)
+    f = anemcorrectfactor(cal, temperature(meas), resistance(meas), reftemp(meas))
+    return sqrt(cal.ϕ/meas.ϕ) * f
 end
 
 
-struct GlassbeadCorrect{T<:AbstractFloat} <: AbstractAnemCorrect
+struct GlassbeadCorrect{U<:AbstractFloat,Fluid} <: AbstractAnemCorrect
     "Calibration operating resistance"
-    Rw::T
+    Rw::U
     "Calibration operating resistance temperature"
-    Tw::T
+    Tw::U
     "Calibration temperature"
-    Ta::T
-    "Calibration pressure"
-    Pa::T
+    T::U
+    "Calibration Fluid"
+    fluid::Fluid
     "Calibration kinematic viscosity"
-    ν::T
+    ν::U
     "Calibration k⋅Prⁿ"
-    ϕ::T
+    ϕ::U
     "Prandtl number exponent"
-    n::T
+    n::U
     "Heat conductivity coefficient of the shell"
-    β::T
+    β::U
     "Glass bead A/L"
-    c1::T
+    c1::U
     "Leads N⋅√(γ/D⋅kAPf)"
-    c2::T
+    c2::U
 end
 
 function mf58correct(Rsens ;R=1e2, T=298.15, P=93e3, n=1/3, N=2, beta=0.2, fluid=Air)

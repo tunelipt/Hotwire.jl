@@ -96,8 +96,9 @@ from the calibration curve, we calculate ``U_c``. To obtain the fluid velocity, 
 
 Up to this point, it was assumed that the resistor temperature ``T_w`` is the same as the surface temperature ``T_s`` that is exposed to the fluid. This is not always the case! There might be an protection, the electrical leads might be large and also transfer heat. Each case should be analyzed individually. This package assumes that the format for the heat transfer is:
 
-   ``E^2 = Y(Re, T_a, P_a, x) \cdot R_w\cdot (T_w - T_a)``
+   ``E^2 = Y(Re, T_a, P_a, x, \ldots) \cdot R_w\cdot (T_w - T_a)``
 
+In this equation ``\ldots`` is any set of parameters used to characterize the model. As an example we will consider a sensor that is a thermistos with wire leads and a glass capsule around it.
 
 ## Glass bead thermistors
 
@@ -119,18 +120,18 @@ The heat loss through the leads should also be taken into consideration. Each le
 
 where
 
-``m^2 = \frac{h_f\cdot P}{k_f\cdot A_f}``
+``m^2 = \frac{h_f\cdot P_f}{k_f\cdot A_f}``
 
 with
 
  * ``h_f`` is the convection coefficient of the leads
- * ``P`` is the perimeter of the lead
+ * ``P_f`` is the perimeter of the lead
  * ``k_f`` is the thermal conductivity of the lead material
  * ``A_f`` is the area of the cross section of the lead
 
 With these hypotheses, the flow loss of the sensor is
 
-``\dot{Q} = \dot{Q_1} + \dot{Q_2} = hA(T_s - T_a) + N\cdot k_fA_f\sqrt{\frac{h_fP}{k_fA_f}} (T_s - T_a)``
+``\dot{Q} = \dot{Q_1} + \dot{Q_2} = hA(T_s - T_a) + N\cdot k_fA_f\sqrt{\frac{h_fP_f}{k_fA_f}} (T_s - T_a)``
 
 In this equation, ``N`` is the number of leads leaving the sensor. It will usually be 2 or 1 (when one of the leads is not exposed).
 
@@ -141,7 +142,7 @@ Combining the equations above, we have
 
 where
 
-``X = hA + N\cdot k_fA_f\sqrt{\frac{h_fP}{k_fA_f}}``
+``X = hA + N\cdot k_fA_f\sqrt{\frac{h_fP_f}{k_fA_f}}``
 
 We still have one problem, we do not know either `h` or `h_f`. We will postulate that
 
@@ -157,13 +158,21 @@ For the body of the sensor, we have a characteristic length ``D`` and for the le
 
 The parameter ``q`` is usually is of the order of 0.3-0.5. A value will have to be selected.
 
+Again we use the approximation for ``h``
+
+``h = f(Re) \times \frac{k}{D} \times Pr^n``
+
 Now, we have:
 
-``X = hA + N\sqrt{\gamma h k_f A_f P}``
+``X = hA + N\sqrt{\gamma h k_f A_f P} = f(Re)\frac{k\cdot Pr^n}{D}\cdot A + N\sqrt{\frac{f(Re)\cdot k \cdot Pr^n\gamma k_f A_f P_f}{D}} = c_1 \cdot f(Re) \phi + c_2 \sqrt{ f(Re)\phi}``
 
-Again we use the approximation for ``h``:
+where
+ * ``phi = k\cdot Pr^n``
+ * ``c_1 = A/D``
+ * ``c_2 = N\sqrt{\gamma k_f A_f P_f / D}``
 
-``h = f(Re) \times \frac{k}{D}``
+
+
 
 And the expression for ``Y`` is:
 
@@ -185,9 +194,9 @@ Now we have an algorithm that can be used to correct anemometer output for diffe
 
 
 
-## Correction for constant current anemometer (CCA)
+### Correction for constant current anemometer (CCA)
 
-When using the constant temperature anemometer, ``R_w`` and therefore ``T_w`` where fixed. This simplifies the calculations a lot. In the case of constant temperature anemometer things are trickier. Since the current is maintained constant, as velocity increases, temperature decreases. But the output voltage is directly related to the constant temperature ``I_w`` and therefore we can determine the sensor resistance and temperature:
+When using the constant temperature anemometer, ``R_w`` and therefore ``T_w`` where fixed. This simplifies _a lot_ the calculations. In the case of constant temperature anemometer things are trickier. Since the current is maintained constant, as velocity increases, temperature decreases. But the output voltage is directly related to the constant temperature ``I_w`` and therefore we can determine the sensor resistance and temperature:
 
 ``R_w = \frac{E}{I_w}``
 

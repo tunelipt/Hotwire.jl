@@ -14,7 +14,8 @@ An `AbstractResistor` should implement the following methods:
 abstract type AbstractResistor end
 
 """
-    r = Resistor(R0=1e3, α=0.0, T₀=293.15)
+    `r = Resistor(R=1e3, a=0.01, T=293.15)`
+    `r = Resistor(R, a, T)`
 
 A resistor with resistance varying linearly with temperature:
 
@@ -27,27 +28,27 @@ R = R₀ (1 + α (T - T₀))
 
 # Examples
 
-```jldoctest
-julia> R = Resistor(1e3, 0.01)
-THW.Resistor(1000.0, 0.0001, 293.15)
+```@example
+julia> R = Resistor(R=1e3, a=0.01, T=293.15)
+Resistor{Float64, Float64, Float64}(1000.0, 0.01, 293.15)
 
 julia> resistance(R)
 1000.0
 
-julia> resistance(R, 120+273.15)
-1010.0
+julia> resistance(R, 393.15)
+2000.0
 
 julia> R()
 1000.0
 
-julia> R(120+273.15)
-1010.0
+julia> R(293.15)
+2000.0
 
 julia> temperature(R)
 293.15
 
-julia> temperature(R, 1010)
-120.00000000000009
+julia> temperature(R, 2000)
+393.15
 
 ```
 """
@@ -62,11 +63,12 @@ end
 Base.broadcastable(R::Resistor) = Ref(R)
 
 
-Resistor(;R0,a=0.4e-2,T0=20.0) = Resistor(R0,a,T0)
+Resistor(;R,a=0.4e-2,T=20.0) = Resistor(R,a,T)
 
 
 """
-    R = Thermistor(R₀, B, T₀)
+    `R = Thermistor(R₀, B, T₀)`
+    `R = Thermistor(R=5e3, B=3950.0, T=293.15)`
 
 Models a NTC thermistor. In the constructor, `R0` is the resistance of the thermistor at the reference temperature  `T₀`. For convenience, the temperature should be expressed in K. `B` is a coefficient that characterizes the temperature dependence of the thermistor. In the model used her, the resistance varies with temperature according to the following equation:
 
@@ -83,9 +85,9 @@ where
     When using the struct `Thermistor`, beware: in the constructor, the unit of T₀ is °C NOT K.
 
 # Examples
-```jldoctest
-julia> R = Thermistor(5e3, 3200, 293.15) # Create an object `Thermistor`
-Thermistor(5000.0, 3200.0, 293.15)
+```@example
+julia> R = Thermistor(R=5e3, B=3200.0, T=293.15) # Create an object `Thermistor`
+Thermistor{Float64, Float64, Float64}(5000.0, 3200.0, 293.15)
 
 julia> resistance(R) # Resistance at the reference temperature
 5000.0
@@ -103,7 +105,7 @@ julia> temperature(R)
 293.15
 
 julia> temperature(R, 4163.588)
-298.15
+298.1499984982642
 
 ```
 
@@ -118,7 +120,7 @@ struct Thermistor{T,U,V} <: AbstractResistor
 end
 Base.broadcastable(R::Thermistor) = Ref(R)
 
-Thermistor(;R0=5e3,B=3950.0,T0=298.15) = Thermistor(R0,B,T0)
+Thermistor(;R=5e3,B=3950.0,T=298.15) = Thermistor(R,B,T)
 
 
 
@@ -179,5 +181,7 @@ temperature(th::Thermistor) = th.T₀
 (th::Thermistor)() = th.R₀
 (r::Resistor)(T) = resistance(r, T)
 (r::Resistor)() = resistance(r)
+
+
 
     
