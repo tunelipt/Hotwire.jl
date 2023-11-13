@@ -1,4 +1,13 @@
--# Temperature/Pressure/etc correction
+# Temperature/Pressure/etc correction
+
+"""
+    `AbstractAnemCorrect`
+
+Abstract class that corrects the output of thermal anemometers due to changes
+in fluid properties and electronic configurations
+
+The output of a thermal anemometer is directly related to the heat transfer from a 
+"""
 
 abstract type AbstractAnemCorrect end
 
@@ -6,8 +15,8 @@ abstract type AbstractAnemCorrect end
 resistance(c::AbstractAnemCorrect) = c.Rw
 temperature(c::AbstractAnemCorrect) = c.Tw
 reftemp(c::AbstractAnemCorrect) = c.T
-flowfluid(c::AbstractAnemCorrect) = c.fluid
-
+fluid(c::AbstractAnemCorrect) = c.fluid
+kinvisc(c::AbstractAnemCorrect) = c.ν
 
 anemcorrectfactor(cal::AbstractAnemCorrect, Tw, Rw, T) =
     sqrt(resistance(cal)/Rw * (temperature(cal)-reftemp(cal)) / (Tw-T))
