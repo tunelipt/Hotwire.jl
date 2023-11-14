@@ -26,12 +26,11 @@ struct CTASensor{Correct,Calibr,T,RT} <: AbstractCTA
     Tw::T
     "Reference temperature of the sensor"
     Tr::T
-    "Reference resistance of the sensor"
-    Rr::T
     "Voltage output gain"
     gain::T
     "Calibration curve"
     cal::Calibr
+    "Thermal model of the sensor"
     corr::Correct
 end
 
@@ -45,8 +44,8 @@ resistance(w::AbstractCTA) = w.Rw
 "Operating temperature of the CTA"
 temperature(w::CTASensor) = w.Tw
 
-reftemp(w::CTASensor) = w.Tr
-refresist(w::CTASensor) = w.Rr
+reftemp(w::CTASensor) = reftemp(w.R)
+refresist(w::CTASensor) = refresist(w.R)
 
 "Overheat ratio of the CTA"
 overheatratio(w::AbstractCTA, T) = resistance(w) / resistance(resistor(w),T) - 1
@@ -62,22 +61,26 @@ calibr(w::CTASensor) = w.cal
 
 function velocity(w::CTASensor{AC}, E, meas::AC) where {AC<:AbstractAnemCorrect}
     cal = calibr(w)
-    Ec = anemcorrect(w.corr, E, meas)
-    return  cal(Ec) * (kinvisc(meas) /  kinvisc(w.corr))
+    g = gain(w)
+    Ec = anemcorrect(E/g, w.corr, meas)
+    return  g*cal(Ec) * (kinvisc(meas) /  kinvisc(w.corr))
 end
 
 (w::CTASensor{AC})(E, meas::AC) where {AC<:AbstractAnemCorrect} = velocity(w,E,meas)
 
 
 function velocity(w::CTASensor, E;
-                  T=reftemp(w.corr), P=101325.0, x=fluid(w.corr),R=resistance(w.corr))
+                  T=reftemp(w.corr), P=101325.0,
+                  x=fluid(w.corr),R=resistance(w.corr))
+    
+    g = gain(w)
     if R != resistance(w.corr)
         Tw = temperature(R)
     else
         Tw = temperature(w.corr)
     end
-    Ec = anemcorrect(w.corr, E, T, P, x, R, Tw)
-    return  cal(Ec) * (kinvisc(meas) /  kinvisc(w.corr))
+    Ec = anemcorrect(E/g, w.corr, T, P, x, R, Tw)
+    return  g*cal(Ec) * (kinvisc(meas) /  kinvisc(w.corr))
 end
 
     
