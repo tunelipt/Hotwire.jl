@@ -1,7 +1,7 @@
 
 
 """
-    CTASensor(R, Rw)
+    CCASensor(R, I)
 
 A structure to manage constant temperature anemometer sensors (CTA)
 
@@ -17,16 +17,14 @@ where `a` is the overheat ratio, `Rw` is the operating resistance of the element
 `Ro` is the reference resistance (resistance at reference temperature).
 
 """
-struct CTASensor{Correct,Calibr<:AbstractAnemCorrect,U,RT} <: AbstractCTA
+struct CTASensor{Correct,Calibr,U,RT} <: AbstractCCA
     "Temperature dependent resistor"
     R::RT
-    "Operating resistance of the sensor"
-    Rw::U
-    "Operating temperature of the sensor"
-    Tw::U
+    "Operating electrical current"
+    I::U
     "Voltage output gain"
     gain::U
-    "Calibration curve U = cal(E)"
+    "Calibration curve"
     cal::Calibr
     "Thermal model of the sensor"
     corr::Correct
@@ -34,34 +32,28 @@ end
 
 Base.broadcastable(sensor::CTASensor) = Ref(sensor)
 
-CTASensor(R::RT, Rw, gain, cal, corr) where {RT<:AbstractResistor} =
-    CTASensor(R, Rw, temperature(R,Rw), gain, cal, corr)
-resistor(w::AbstractCTA) = w.R
+CTASensor(R, Rw, gain, cal, corr) = CTASensor
+resistor(w::AbstractCCA) = w.R
 
-"Operating resistance of the CTA"
-resistance(w::AbstractCTA) = w.Rw
+"Operating current of the CTA"
+current(w::AbstractCCA) = w.Rw
 
-"Operating temperature of the CTA"
-temperature(w::CTASensor) = w.Tw
+reftemp(w::CCASensor) = reftemp(w.R)
+refresist(w::CCASensor) = refresist(w.R)
 
-reftemp(w::CTASensor) = reftemp(w.R)
-refresist(w::CTASensor) = refresist(w.R)
 
-"Overheat ratio of the CTA"
-overheatratio(w::AbstractCTA, T) = resistance(w) / resistance(resistor(w),T) - 1
-overheatratio(w::AbstractCTA) = resistance(w) / refresist(w) - 1
+gain(w::AbstractCCA) = w.gain
 
-"Temperature above reference temperature that the CTA sensor operates"
-overtemp(w::AbstractCTA,T) = temperature(w) - T
-overtemp(w::AbstractCTA) = temperature(w) - reftemp(w) 
+calibr(w::CCASensor) = w.cal
 
-gain(w::AbstractACTA) = w.gain
-
-calibr(w::CTASensor) = w.cal
-
-function velocity(w::CTASensor{AC}, E, meas::AC) where {AC<:AbstractAnemCorrect}
+function velocity(w::CCASensor{AC}, E,
+                  meas::AC, I=current(w)) where {AC<:AbstractAnemCorrect}
     cal = calibr(w)
     g = gain(w)
+    E1 = E / g
+    Rw = E1 / w.I
+    Tw = temperature(w.R, Rw)
+    # Something funny. I still need to implement
     Ec = anemcorrect(E/g, w.corr, meas)
     return  g*cal(Ec) * (kinvisc(meas) /  kinvisc(w.corr))
 end
