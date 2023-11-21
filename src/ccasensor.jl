@@ -58,25 +58,26 @@ function velocity(w::CCASensor{AC}, E,
     return  g*cal(Ec) * (kinvisc(meas) /  kinvisc(w.corr))
 end
 
-(w::CTASensor{AC})(E, meas::AC) where {AC<:AbstractAnemCorrect} = velocity(w,E,meas)
+(w::CCASensor{AC})(E, meas::AC) where {AC<:AbstractAnemCorrect} = velocity(w,E,meas)
 
 
-function velocity(w::CTASensor, E;
+function velocity(w::CCASensor{Correct}, E;
                   T=reftemp(w.corr), P=101325.0,
-                  x=fluid(w.corr),R=resistance(w.corr))
-    
-    g = gain(w)
+                  x=fluid(w.corr),R=resistance(w.corr)) where {Correct}
+
     if R != resistance(w.corr)
         Tw = temperature(R)
     else
         Tw = temperature(w.corr)
     end
-    Ec = anemcorrect(E/g, w.corr, T, P, x, R, Tw)
-    return  g*cal(Ec) * (kinvisc(meas) /  kinvisc(w.corr))
+    meas = Correct(w.corr, T, Rw, Tw)
+    return velocity(w, E, meas, current(w))
 end
 
     
-        
+(w::CCASensor{Correct})(E;
+                  T=reftemp(w.corr), P=101325.0,
+                  x=fluid(w.corr),R=resistance(w.corr)) where {Correct}        
                   
                   
    

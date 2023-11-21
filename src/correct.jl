@@ -37,6 +37,13 @@ struct TempCorrect{U<:AbstractFloat,Fluid} <: AbstractAnemCorrect
     ν::U
 end
 
+function TempCorrect(c::TempCorrect;
+                     T=reftemp(c), Rw=resistance(c), P=101325.0
+                     Tw=temperature(c), x=fluid(c))
+    ν = kinvisc(x, T, P)
+    TempCorrect(Rw, Tw, T, x, c.ν)
+end
+
 
 anemcorrect(E, cal::TempCorrect, meas::TempCorrect) =
     E*anemcorrectfactor(cal, temperature(meas), resistance(meas), reftemp(meas))
@@ -59,6 +66,21 @@ struct WireCorrect{U<:AbstractFloat,Fluid} <: AbstractAnemCorrect
     ϕ::U
     "Prandtl number exponent"
     n::U
+end
+
+function WireCorrect(c::WireCorrect;
+                     T=reftemp(c), Rw=resistance(c), Tw=temperature(c),
+                     P=101325.0, x=fluid(c))
+    ρ = density(x, T, P)
+    μ = viscosity(x, T, P)
+    cₚ = specheat(x, T, P)
+    k = heatcond(x, T, P)
+
+    Pr = cₚ * μ / k
+    ν  = μ / ρ
+    ϕ = k * Pr^c.n
+    
+    WireCorrect(Rw, Tw, T, x, ν, ϕ, n)
 end
 
 function anemcorrect(E*cal::WireCorrect, meas::WireCorrect)
@@ -99,6 +121,24 @@ struct GlassbeadCorrect{U<:AbstractFloat,Fluid} <: AbstractAnemCorrect
     "Leads N⋅√(γ/D⋅kAPf)"
     c2::U
 end
+
+    
+function GlassbeadCorrect(c::GlassbeadCorrect;
+                          T=reftemp(c), Rw=resistance(c),
+                          Tw=temperature(c), x=fluid(c), P=101325.0)
+    ρ = density(x, T, P)
+    μ = viscosity(x, T, P)
+    cₚ = specheat(x, T, P)
+    k = heatcond(x, T, P)
+    
+    Pr = cₚ * μ / k
+    ν  = μ / ρ
+    
+    meas = GlassbeadCorrect(Rw, Tw, T, x, ν,
+                            k*Pr^cal.n, cal.n, cal.β, cal.c1, cal.c2)
+    
+    GlassbeadCorrect(Rw, Tw, T, c.fluid, c.ν, c.ϕ, c.n,
+                                      c.β, c.c1, c.c2)
 
 function mf58correct(Rsens ;R=1e2, T=298.15, P=101_325.0, n=1/3,
                      N=2, beta=150.0, fluid=Air)
