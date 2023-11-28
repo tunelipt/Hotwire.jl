@@ -38,51 +38,76 @@ using Test
 
 
     # CTASensor
-    #=
+    airconst = ConstPropFluid()
+    Rw = 2.0
+    Tw = 400.0
+    Ta = 300.0
+    ν  = kinvisc(airconst, 300, 101325)
+    tempcorr = TempCorrect(Rw, Tw, Ta, airconst, ν)
     r = Resistor(1.0, 0.01, 300.0)
-    w = CTASensor(r, 2.0)
+    w = CTASensor(r, 2.0, 1.0, x->x, tempcorr)
     @test r == resistor(w)
-    @test optemperature(w) ≈ 400.0
+    @test temperature(w) ≈ 400.0
     @test overtemp(w) ≈ 100.0
-    @test overheat_ratio(w) ≈ 1.0
+    @test overheatratio(w) ≈ 1.0
 
-    w1 = Wire(1.0, 2.0, 300.0, 0.01)
-    @test w == w1
-
+    airrat = ConstPropFluid(;rho=12//10, mu=18//1_000_000, k=26//1000, cp=1005//1)
+    ν = (18//1_000_000) / (12//10)
+    Rw = 2//1
     r = Resistor(1, 1//100, 0)
-    w = CTASensor(r, 2//1)
-    @test r == resistor(w)
-    @test optemperature(w) == 100//1
-    @test overtemp(w) ≈ 100//1
-    @test overheat_ratio(w) ≈ 1//1
-    
-    
-    r = Thermistor(1e3, 3300, 25.0+273.15)
-    Rw = 100.0
-    w = CTASensor(r, Rw)
     Tw = temperature(r, Rw)
+    Ta = 25//1
+    tempcorr = TempCorrect(Rw, Tw, Ta, airrat, ν)
+    w = CTASensor(r, 2//1, 1//1, E->E, tempcorr)
+    @test r == resistor(w)
+    @test temperature(w) == 100//1
+    @test overtemp(w) == 100//1
+    @test overheatratio(w) == 1//1
+    
+    
+    r = Thermistor(R=1e3, B=3300, T=25.0+273.15)
+    airconst = ConstPropFluid()
+    Rw = 100.0
+    Tw = temperature(r, Rw)
+    Ta = 300.0 + 273.15
+    ν  = kinvisc(airconst, 300, 101325)
+    tempcorr = TempCorrect(Rw, Tw, Ta, airconst, ν)
+    w = CTASensor(r, Rw, 1.0, E->E, tempcorr)
     a = Rw/1e3 - 1.0
     @test r == resistor(w)
-    @test optemperature(w) ≈ Tw
+    @test temperature(w) ≈ Tw
     @test overtemp(w) ≈ Tw - 298.15
-    @test overheat_ratio(w) ≈ a
+    @test overheatratio(w) ≈ a
 
-    r = Thermistor(1f3, 3300, 25f0+273.15f0)
+    
+    airf = ConstPropFluid(;rho=1f0, mu=1.8f-5, k=26f-3, cp=1005f0)
+    r = Thermistor(R=1f3, B=3300f0, T=25f0+273.15f0)
     Rw = 100f0
-    w = CTASensor(r, Rw)
     Tw = temperature(r, Rw)
+    Ta = 298.15f0
+    ν = kinvisc(airf, Ta, 101325)
+    tempcorr = TempCorrect(Rw, Tw, Ta, airf, ν)
+    
+    w = CTASensor(r, Rw, 1f0, E->E, tempcorr)
     a = Rw/1f3 - 1f0
     @test r == resistor(w)
-    @test optemperature(w) ≈ Tw
+    @test temperature(w) ≈ Tw
     @test overtemp(w) ≈ Tw - 298.15f0
-    @test overheat_ratio(w) ≈ a
+    @test overheatratio(w) ≈ a
+
     
     # CCASensor - not much to do
-    r = Resistor(1.0, 0.01, 300.0)
-    w = CCASensor(r, 1.0)
+    airconst = ConstPropFluid()
+    Rw = 2.0
+    Ta = 300.0
+    r = Resistor(1.0, 0.01, Ta)
+    ν  = kinvisc(airconst, 300, 101325)
+    I = 1.0
+    w = CCASensor(r, I)
     @test resistor(w) == r
     @test current(w) == 1.0
 
+    #=
     # tempcorr.jl
     # tempcorr(CTASensor)
     Too = 20.0+273.15

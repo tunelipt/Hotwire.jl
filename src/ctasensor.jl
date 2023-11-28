@@ -17,7 +17,7 @@ where `a` is the overheat ratio, `Rw` is the operating resistance of the element
 `Ro` is the reference resistance (resistance at reference temperature).
 
 """
-struct CTASensor{Correct,Calibr<:AbstractAnemCorrect,U,RT} <: AbstractCTA
+struct CTASensor{Correct<:AbstractAnemCorrect,Fit,Fluid,U,RT} <: AbstractCTA
     "Temperature dependent resistor"
     R::RT
     "Operating resistance of the sensor"
@@ -27,14 +27,16 @@ struct CTASensor{Correct,Calibr<:AbstractAnemCorrect,U,RT} <: AbstractCTA
     "Voltage output gain"
     gain::U
     "Calibration curve U = cal(E)"
-    cal::Calibr
+    cal::Fit
     "Thermal model of the sensor"
     corr::Correct
+    "Calibration fluid"
+    fluid::Fluid
 end
 
 Base.broadcastable(sensor::CTASensor) = Ref(sensor)
 
-CTASensor(R::RT, Rw, gain, cal, corr) where {RT<:AbstractResistor} =
+CTASensor(R::RT, Rw, gain, cal, corr,fluid=AIR) where {RT<:AbstractResistor} =
     CTASensor(R, Rw, temperature(R,Rw), gain, cal, corr)
 resistor(w::AbstractCTA) = w.R
 
@@ -55,9 +57,10 @@ overheatratio(w::AbstractCTA) = resistance(w) / refresist(w) - 1
 overtemp(w::AbstractCTA,T) = temperature(w) - T
 overtemp(w::AbstractCTA) = temperature(w) - reftemp(w) 
 
-gain(w::AbstractACTA) = w.gain
+gain(w::AbstractCTA) = w.gain
 
 calibr(w::CTASensor) = w.cal
+fluid(c::AbstractThermalAnemometer) = c.fluid
 
 function velocity(w::CTASensor{AC}, E, meas::AC) where {AC<:AbstractAnemCorrect}
     cal = calibr(w)
