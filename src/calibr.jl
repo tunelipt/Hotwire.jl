@@ -17,8 +17,18 @@ end
 
 Base.broadcastable(cal::CalibrCurve) = Ref(cal)
 
+reftemp(cal::CalibrCurve) = reftemp(cal.temp)
+resistance(cal::CalibrCurve) = resistance(cal.temp)
+temperature(cal::CalibrCurve) = temperature(cal.temp)
+fluid(cal::CalibrCurve) = cal.fluid
 
-(cal::CalibrCurve)(E) = cal.fit(E)
+
+function correction(cal::CalibrCurve; E, T=reftemp(cal), P=101325.0,
+                    Tw=temperature(cal), Rw=resiscance(cal),
+                    fluid=fluid(cal))
+    
+    
+end
 
 
 
