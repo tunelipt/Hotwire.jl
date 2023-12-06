@@ -7,35 +7,58 @@ export mf58correct
 
 
 
-struct TempCorrect{U<:Real}
-    "Calibration operating resistance"
+struct TempCorrect{U<:Real,V<:Real,W<:Real}
+    "Fluid temperature"
+    T::W
+    "Operating resistance"
     Rw::U
-    "Calibration operating resistance temperature"
-    Tw::U
-    "Calibration temperature"
-    T::U
+    "Operating resistance temperature"
+    Tw::V
 end
+
+Base.broadcastable(cal::TempCorrect) = Ref(cal)
+
 
 resistance(c::TempCorrect) = c.Rw
 temperature(c::TempCorrect) = c.Tw
 reftemp(c::TempCorrect) = c.T
 
+
+"""
+`TempCorrect(T, Rw, Tw)`
+`TempCorrect(c::TempCorrect; T=reftemp(c), Rw=resistance(c), Tw=temperature(c))`
+
+Creates a `TempCorrect` object. The `TempCorrect` struct stores information on
+operating conditions of a thermal anemometer. The copy constructor creates a new
+`TempCorrect` object changing individual fields.
+"""
 function TempCorrect(c::TempCorrect;
                      T=reftemp(c), Rw=resistance(c), Tw=temperature(c))
     TempCorrect(Rw, Tw, T)
 end
+
+"""
+`correctfactor(cal::TempCorrect, op::TempCorrect)`
+`correctfactor(cal::TempCorrect, T=reftemp(cal),Rw=resistance(cal),Tw=temperature(cal))`
+
+Calculates the correction factor due to changes in operating conditions.
+Given a thermal anemometer with operating conditions specified by `cal`,
+ and the output of the thermal anemometer at different operating conditions given by
+`op::TempCorrect` or by fluid  temperature `T`, operating resistance `Rw` and operating temperature `Tw`.
+"""
 anemcorrectfactor(cal::TemCorrect, op::TempCorrect) =
     sqrt(resistance(cal)/resistance(op) *
     (temperature(cal) - reftemp(cal)) / (temperature(op) - reftemp(op)))
 
-anemcorrectfactor(cal::TempCorrect, Tw, Rw, T) =
-    sqrt(resistance(cal)/Rw * (temperature(cal)-reftemp(cal)) / (Tw-T))
+anemcorrectfactor(cal::TempCorrect; T=reftemp(cal), Rw=resistance(cal),
+                  Tw=temperature(cal)) =
+                      sqrt(resistance(cal)/Rw *
+                      (temperature(cal)-reftemp(cal)) / (Tw-T))
 
+(cal::TempCorrect)(op::TempCorrect) = anemcorrectfactor(cal, op)
+(cal::TempCorrect)(; T=reftemp(cal), Rw=resistance(cal), Tw=temperature(cal)) =
+    anemcorrectfactor(cal; T=T, Tw=Tw, Rw=Rw)
 
-resistance(c::AbstractAnemCorrect) = c.Rw
-temperature(c::AbstractAnemCorrect) = c.Tw
-reftemp(c::AbstractAnemCorrect) = c.T
-kinvisc(c::AbstractAnemCorrect) = c.ν
 
 """
     `AbstractAnemCorrect`
@@ -53,16 +76,8 @@ anemcorrect(E, cal::TempCorrect, meas::TempCorrect) =
 
 anemcorrect(E, cal::TempCorrect, T, P, x, Rw, Tw) = E*anemcorrect(cal, Tw, Rw, T)
 
-    
+
 struct WireCorrect{U<:Real,Fluid} <: AbstractAnemCorrect
-    "Calibration operating resistance"
-    Rw::U
-    "Calibration operating resistance temperature"
-    Tw::U
-    "Calibration temperature"
-    T::U
-    "Calibration Fluid"
-    fluid::Fluid
     "Calibration kinematic viscosity"
     ν::U
     "Calibration k⋅Prⁿ"
@@ -71,13 +86,20 @@ struct WireCorrect{U<:Real,Fluid} <: AbstractAnemCorrect
     n::U
 end
 
-function WireCorrect(c::WireCorrect;
-                     T=reftemp(c), Rw=resistance(c), Tw=temperature(c),
-                     P=101325.0, x=fluid(c))
-    ρ = density(x, T, P)
-    μ = viscosity(x, T, P)
-    cₚ = specheat(x, T, P)
-    k = heatcond(x, T, P)
+"""
+`WireCorrect(c::WireCorrect, cal::TempCorrect, fluid; 
+             T=reftemp(cal), Rw=resistance(cal), Tw=temperature(cal),
+             P=101325.0)`
+
+Creates an object 
+"""
+function WireCorrect(c::WireCorrect, cal::TempCorrect, fluid;
+                     T=reftemp(cal), Rw=resistance(cal), Tw=temperature(cal),
+                     P=101325.0)
+    ρ = density(fluid, T, P)
+    μ = viscosity(fluid, T, P)
+    cₚ = specheat(fluid, T, P)
+    k = heatcond(fluid, T, P)
 
     Pr = cₚ * μ / k
     ν  = μ / ρ
@@ -86,31 +108,13 @@ function WireCorrect(c::WireCorrect;
     WireCorrect(Rw, Tw, T, x, ν, ϕ, n)
 end
 
-function anemcorrect(E,cal::WireCorrect, meas::WireCorrect)
-    f = anemcorrectfactor(cal, temperature(meas), resistance(meas), reftemp(meas))
-    return E*sqrt(cal.ϕ/meas.ϕ) * f
-end
-
-function anemcorrect(E,cal::WireCorrect, T, P, x, Rw, Tw)
-    ρ = density(x, T, P)
-    μ = viscosity(x, T, P)
-    cₚ = specheat(x, T, P)
-    k = heatcond(x, T, P)
-
-    Pr = cₚ * μ / k
-    ν  = μ / ρ
-    return anemcorrect(E, cal, WireCorrect(Rw, Tw, T, x, μ/ρ, k*Pr^cal.n,cal.n))
+function anemcorrect(E, cmod::WireCorrect, caltemp::TempCorrect,
+                     opmod::WireCorrect, optemp::TempCorrect)
+    f = anemcorrectfactor(caltemp, optemp)
+    return E*sqrt(cmod.ϕ/opmod.ϕ) * f
 end
 
 struct GlassbeadCorrect{U<:Real,Fluid} <: AbstractAnemCorrect
-    "Calibration operating resistance"
-    Rw::U
-    "Calibration operating resistance temperature"
-    Tw::U
-    "Calibration temperature"
-    T::U
-    "Calibration Fluid"
-    fluid::Fluid
     "Calibration kinematic viscosity"
     ν::U
     "Calibration k⋅Prⁿ"
@@ -190,25 +194,26 @@ function anemcorrect(E,cal::GlassbeadCorrect, T, P, x, Rw, Tw)
     return anemcorrect(E, cal, meas)
 end
 
-function anemcorrect(E, cal::GlassbeadCorrect, meas::GlassbeadCorrect)
+function anemcorrect(E, cmod::WireCorrect, caltemp::TempCorrect,
+                     opmod::WireCorrect, optemp::TempCorrect)
     
-    Rwc = resistance(cal)
-    Twc = temperature(cal)
-    Tac = reftemp(cal)
+    Rwc = resistance(caltemp)
+    Twc = temperature(caltemp)
+    Tac = reftemp(caltemp)
 
-    Rw = resistance(meas)
-    Tw = temperature(meas)
-    Ta = reftemp(meas)
+    Rw = resistance(optemp)
+    Tw = temperature(optemp)
+    Ta = reftemp(optemp)
 
-    β = cal.β
-    ϕc = cal.ϕ
-    ϕ = meas.ϕ
+    β = cmod.β
+    ϕc = cmod.ϕ
+    ϕ = opmod.ϕ
     
     Y = E*E / (Rw * (Tw - Ta))
     X = Y / (1-β*Y)
 
-    c1 = cal.c1
-    c2 = cal.c2
+    c1 = cmod.c1
+    c2 = cmod.c2
 
     u = (-c2 + sqrt(c2*c2 + 4*c1*X)) / (2c1)
 
