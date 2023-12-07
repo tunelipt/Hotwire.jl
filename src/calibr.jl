@@ -4,13 +4,13 @@ using Statistics
 abstract type AbstractCalibr end
 abstract type AbstractCalibr1d end
 
-struct CalibrCurve{Correct,Fluid,Fit,U} <: AbstractCalibr1d
+struct CalibrCurve{Correct,Fluid,Fit,TCorr} <: AbstractCalibr1d
     "Anemometer calibration curve"
     fit::Fit
     "Calibration fluid"
     fluid::Fluid
     "Operating conditions of the anemometer"
-    temp::TempCorrect{U}
+    temp::TCorr
     "Correction algorithm"
     corr::Correct
 end
@@ -23,12 +23,25 @@ temperature(cal::CalibrCurve) = temperature(cal.temp)
 fluid(cal::CalibrCurve) = cal.fluid
 
 
-function correction(cal::CalibrCurve; E, T=reftemp(cal), P=101325.0,
-                    Tw=temperature(cal), Rw=resiscance(cal),
-                    fluid=fluid(cal))
+function correction(E, cal::CalibrCurve{Correct},
+                    tc::TempCorr, mc::Correct) where {Correct}
     
+    anemcorrect(E, cal.temp, cal.corr, tc, mc)
     
 end
 
 
+function correctmodel(cal::CalibrCurve{Correct},
+                      tc::TempCorr, fluid, P=101325.0) where {Correct}
+
+    Correct(cal.corr, tc, fluid, P)
+end
+
+function velocity(E, cal::CalibrCurve, tc::TempCorr, cm::AbstractAnemCorrect)
+    Ec = anemcorrect(E, cal.temp, cal.corr, tc, cm)
+    Uc = cal.fit(Ec)
+    return kinvisc(cm) / kinvisc(cal.corr)
+end
+
+    
 

@@ -1,7 +1,7 @@
 # Temperature/Pressure/etc correction
 
-export AbstractAnemCorrect, TempCorrect, WireCorrect, GlassbeadCorrect
-export mf58correct
+export AbstractAnemCorrect, TempCorrect, WireCorrect, GlassbeadCorrect, TOnlyCorrect
+export mf58correct, anemcorrect, anemcorrectfactor
     
 
 
@@ -9,11 +9,11 @@ export mf58correct
 
 struct TempCorrect{U<:Real,V<:Real,W<:Real}
     "Fluid temperature"
-    T::W
+    T::U
     "Operating resistance"
-    Rw::U
+    Rw::V
     "Operating resistance temperature"
-    Tw::V
+    Tw::W
 end
 
 Base.broadcastable(cal::TempCorrect) = Ref(cal)
@@ -38,8 +38,8 @@ function TempCorrect(c::TempCorrect;
 end
 
 """
-`correctfactor(cal::TempCorrect, op::TempCorrect)`
-`correctfactor(cal::TempCorrect, T=reftemp(cal),Rw=resistance(cal),Tw=temperature(cal))`
+`anemcorrectfactor(c::TempCorrect, op::TempCorrect)`
+`anemcorrectfactor(c::TempCorrect,T=reftemp(cal),Rw=resistance(cal),Tw=temperature(cal))`
 
 Calculates the correction factor due to changes in operating conditions.
 Given a thermal anemometer with operating conditions specified by `cal`,
@@ -51,9 +51,7 @@ anemcorrectfactor(cal::TemCorrect, op::TempCorrect) =
     (temperature(cal) - reftemp(cal)) / (temperature(op) - reftemp(op)))
 
 anemcorrectfactor(cal::TempCorrect; T=reftemp(cal), Rw=resistance(cal),
-                  Tw=temperature(cal)) =
-                      sqrt(resistance(cal)/Rw *
-                      (temperature(cal)-reftemp(cal)) / (Tw-T))
+                  Tw=temperature(cal)) = anemcorrectfactor(cal, TempCorr(T,Rw,Tw))
 
 (cal::TempCorrect)(op::TempCorrect) = anemcorrectfactor(cal, op)
 (cal::TempCorrect)(; T=reftemp(cal), Rw=resistance(cal), Tw=temperature(cal)) =
@@ -70,32 +68,98 @@ The output of a thermal anemometer is directly related to the heat transfer from
 """
 abstract type AbstractAnemCorrect end
 
+kinvisc(c::AbstractAnemCorrec) = c.ν
 
-anemcorrect(E, cal::TempCorrect, meas::TempCorrect) =
-    E*anemcorrectfactor(cal, temperature(meas), resistance(meas), reftemp(meas))
+"""
+`anemcorrect(E, tc_cal, mc_cal, tc, mc)`
 
-anemcorrect(E, cal::TempCorrect, T, P, x, Rw, Tw) = E*anemcorrect(cal, Tw, Rw, T)
+Corrects the output of a thermal anemometer with respect to varying operating
+conditions such as electronics, fluid composition, temperature and pressure.
+
+## Arguments
+
+ * `E`: Voltage accross the sensor resistanve
+ * `tc_cal`: [`TempCorr`](@ref) at calibration conditions
+ * `mc_cal`: A correction model for operating conditions at calibration conditions
+ * `tc`: [`TempCorr`](@ref) at operating conditions
+ * `mc`: A correction model for operating conditions at operating conditions
+
+## Returns
+
+Corrected anemometer output at calibration conditions.
+
+## See also
+
+[`TempCorr`](@ref), [`WireCorrect`](@ref), [`GlassbeadCorrect`](@ref)
 
 
-struct WireCorrect{U<:Real,Fluid} <: AbstractAnemCorrect
+
+"""
+anemcorrect(E, tc_cal::TempCorrect, mc_cal, tc::TempCorrect, mc) =
+    E*anemcorrectfactor(tc_cal, tc)
+
+"""
+`TOnlyCorrect(ν)`
+
+No correction model, only [`TempCorr`](@ref) will be used to correct anemometer output.
+Only a change in kinematic viscosity will lead to a change in flow velocity.
+"""
+struct TOnlyCorrec{U} <: AbstractAnemCorrect
+    "Kinematic viscosity"
+    ν::U
+end
+
+function TOnlyCorrect(c::WireCorrect, tc::TempCorrect, fluid, P=101325.0)
+    T = reftemp(tc)
+    ν = kinvisc(fluid, T, P)
+    return TOnlyCorrect(ν)
+end
+
+
+function anemcorrect(E, tc_cal::TempCorrect, mc_cal::TOnlyCorrect,
+                     tc::TempCorrect, mc::TOnlyCorrect) 
+    
+    f = anemcorrectfactor(tc_cal, tc)
+    return E * f
+end
+
+struct WireCorrect{U<:Real,V<:Real,W<:Real} <: AbstractAnemCorrect
     "Calibration kinematic viscosity"
     ν::U
     "Calibration k⋅Prⁿ"
-    ϕ::U
+    ϕ::V
     "Prandtl number exponent"
-    n::U
+    n::W
 end
 
-"""
-`WireCorrect(c::WireCorrect, cal::TempCorrect, fluid; 
-             T=reftemp(cal), Rw=resistance(cal), Tw=temperature(cal),
-             P=101325.0)`
 
-Creates an object 
 """
-function WireCorrect(c::WireCorrect, cal::TempCorrect, fluid;
-                     T=reftemp(cal), Rw=resistance(cal), Tw=temperature(cal),
-                     P=101325.0)
+`WireCorrect(ν, ϕ, n)`
+`WireCorrect(c::WireCorrect, tc::TempCorrect, fluid, P)`
+
+Creates `WireCorrect` object. This object allows the correction for thermal anemometer output when the surface of the resistive element _is_ equal to the temperature of the resitive element.
+
+This correction modelo assumes that the Nusselt number of the heated element is
+
+    ``Nu(Re,Pr) = f(Re)⋅Prⁿ``
+
+## Arguments
+
+ * `ν` Kinematic viscosity of the fluid
+ * `ϕ` ``k⋅Prⁿ`` of the fluid where ``k`` is the heat conductivity of the fluid and ``Pr`` its Prandtl number
+ * `n` is the exponent of ``Pr`` in the correlation. A value of 1/3 should be good.
+
+In order to conform to the API, the second form build a new `WireCorrect` object from a previous (calibration) `WireCorrect` object under new conditions (fluid, pressure and `TempCorr`)
+
+ * `c` A `WireCorrect` that is built upon
+ * `tc` specifies the [`TempCorrect`](@ref)
+ * `fluid` specifies the fluid
+ * `P` Fluid pressure
+
+"""
+function WireCorrect(c::WireCorrect, tc::TempCorrect, fluid, P=101325.0)
+    T = reftemp(tc)
+    
     ρ = density(fluid, T, P)
     μ = viscosity(fluid, T, P)
     cₚ = specheat(fluid, T, P)
@@ -105,13 +169,14 @@ function WireCorrect(c::WireCorrect, cal::TempCorrect, fluid;
     ν  = μ / ρ
     ϕ = k * Pr^c.n
     
-    WireCorrect(Rw, Tw, T, x, ν, ϕ, n)
+    WireCorrect(ν, ϕ, n)
 end
 
-function anemcorrect(E, cmod::WireCorrect, caltemp::TempCorrect,
-                     opmod::WireCorrect, optemp::TempCorrect)
-    f = anemcorrectfactor(caltemp, optemp)
-    return E*sqrt(cmod.ϕ/opmod.ϕ) * f
+function anemcorrect(E, tc_cal::TempCorrect, mc_cal::WireCorrect,
+                     tc::TempCorrect, mc::WireCorrect) 
+    
+    f = anemcorrectfactor(tc_cal, tc)
+    return E*sqrt(mc_cal.ϕ/mc.ϕ) * f
 end
 
 struct GlassbeadCorrect{U<:Real,Fluid} <: AbstractAnemCorrect
@@ -129,10 +194,14 @@ struct GlassbeadCorrect{U<:Real,Fluid} <: AbstractAnemCorrect
     c2::U
 end
 
-    
-function GlassbeadCorrect(c::GlassbeadCorrect;
-                          T=reftemp(c), Rw=resistance(c),
-                          Tw=temperature(c), x=fluid(c), P=101325.0)
+"""
+`GlassbeadCorrect(ν, ϕ, n, β, c1, c2)`
+`GlassbeadCorrect(ν, ϕ, n, β, c1, c2)`
+
+"""
+function GlassbeadCorrect(c::GlassbeadCorrect, tc::TempCorrect, fluid, P=101325.0)
+
+    T = reftemp(tc)
     ρ = density(x, T, P)
     μ = viscosity(x, T, P)
     cₚ = specheat(x, T, P)
@@ -141,11 +210,8 @@ function GlassbeadCorrect(c::GlassbeadCorrect;
     Pr = cₚ * μ / k
     ν  = μ / ρ
     
-    meas = GlassbeadCorrect(Rw, Tw, T, x, ν,
-                            k*Pr^cal.n, cal.n, cal.β, cal.c1, cal.c2)
+    return GlassbeadCorrect(ν, k*Pr^c.n, c.n, c.β, c.c1, c.c2)
     
-    GlassbeadCorrect(Rw, Tw, T, c.fluid, c.ν, c.ϕ, c.n,
-                     c.β, c.c1, c.c2)
 end
 
 
@@ -194,26 +260,26 @@ function anemcorrect(E,cal::GlassbeadCorrect, T, P, x, Rw, Tw)
     return anemcorrect(E, cal, meas)
 end
 
-function anemcorrect(E, cmod::WireCorrect, caltemp::TempCorrect,
-                     opmod::WireCorrect, optemp::TempCorrect)
-    
-    Rwc = resistance(caltemp)
-    Twc = temperature(caltemp)
-    Tac = reftemp(caltemp)
+function anemcorrect(E, tc_cal::TempCorrect, mc_cal::WireCorrect,
+                     tc::TempCorrect, mc::WireCorrect) 
 
-    Rw = resistance(optemp)
-    Tw = temperature(optemp)
-    Ta = reftemp(optemp)
+    Rwc = resistance(tc_cal)
+    Twc = temperature(tc_cal)
+    Tac = reftemp(tc_cal)
 
-    β = cmod.β
-    ϕc = cmod.ϕ
-    ϕ = opmod.ϕ
+    Rw = resistance(tc)
+    Tw = temperature(tc)
+    Ta = reftemp(tc)
+
+    β = mc_cal.β
+    ϕc = mc_cal.ϕ
+    ϕ = mc.ϕ
     
     Y = E*E / (Rw * (Tw - Ta))
     X = Y / (1-β*Y)
 
-    c1 = cmod.c1
-    c2 = cmod.c2
+    c1 = mc_cal.c1
+    c2 = mc_cal.c2
 
     u = (-c2 + sqrt(c2*c2 + 4*c1*X)) / (2c1)
 
