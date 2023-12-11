@@ -23,6 +23,7 @@ temperature(cal::CalibrCurve) = temperature(cal.temp)
 fluid(cal::CalibrCurve) = cal.fluid
 
 
+
 function correction(E, cal::CalibrCurve{Correct},
                     tc::TempCorr, mc::Correct) where {Correct}
     
@@ -43,5 +44,10 @@ function velocity(E, cal::CalibrCurve, tc::TempCorr, cm::AbstractAnemCorrect)
     return kinvisc(cm) / kinvisc(cal.corr)
 end
 
-    
+(cal::CalibrCurve)(E::Real) = cal.fit(E)
+
+function (cal::CalibrCurve{AC})(E::Real, tc::TempCorr,
+                                mc::AC) where {AC<:AbstractAnemCorrect}
+end
+
 

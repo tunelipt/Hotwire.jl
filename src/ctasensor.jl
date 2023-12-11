@@ -62,15 +62,16 @@ gain(w::AbstractCTA) = w.gain
 calibr(w::CTASensor) = w.cal
 fluid(c::AbstractThermalAnemometer) = c.fluid
 
-function velocity(w::CTASensor{AC}, E, meas::AC) where {AC<:AbstractAnemCorrect}
+
+function velocity(w::CTASensor{AC}, E,
+                  tc::TempCorr, mc::AC) where {AC<:AbstractAnemCorrect}
     cal = calibr(w)
     g = gain(w)
-    Ec = anemcorrect(E/g, w.corr, meas)
-    return  g*cal(Ec) * (kinvisc(meas) /  kinvisc(w.corr))
+    Ec = anemcorrect(E/g, cal.temp, cal.corr, tc, mc)
+    return  cal(g*Ec) * (kinvisc(mc) /  kinvisc(cal.corr))
 end
 
-(w::CTASensor{AC})(E, meas::AC) where {AC<:AbstractAnemCorrect} = velocity(w,E,meas)
-
+velocity(w::CTASensor, E::Real) = calibr(w).fit(E)
 
 function velocity(w::CTASensor, E;
                   T=reftemp(w.corr), P=101325.0,
