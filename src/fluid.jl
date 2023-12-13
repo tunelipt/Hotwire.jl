@@ -1,5 +1,3 @@
-export ConstPropFluid, heatcond, prandtl, viscosity, kinvisc, density, specheat
-export AIR, HELIUM, NITROGEN, C3H8, OXYGEN, IdealGas
 
 import Polynomials: ImmutablePolynomial
 

@@ -201,7 +201,7 @@ in [`KingPoly`](@ref).
 
 
 ## Examples
-```jldoctest
+```@example
 ulia> U = 1.0:0.2:5.0
 1.0:0.2:5.0
 
@@ -326,7 +326,7 @@ arguments `E` and `U` that can be used to fit the data.
 
 See also [`KingLaw`](@ref) for the conventional modified King's law fitting function.
 ## Examples
-```jldoctest
+```@example
 julia> U1 = 1.0:0.2:5.0
 1.0:0.2:5.0
 
@@ -439,7 +439,7 @@ If positional argument `n` is provided, the power law exponent `n` is fixed.
 
 ## Examples
 
-```jldoctest
+```@example
 julia> U = 1.0:0.2:5.0; E = sqrt.(2.0 .+ 2.0 * sqrt.(U));
 
 julia> f = make_king_fitfun()
@@ -449,9 +449,9 @@ julia> f(E,U)
 KingLaw{Float64}(2.0000000000000018, 1.9999999999999982, 0.5000000000000003)
 ```
 """
-make_king_fitfun(;n0=0.45, err=1e-8, maxiter=200, r=1.0) =
+makekingfitfun(;n0=0.45, err=1e-8, maxiter=200, r=1.0) =
     (E,U) -> KingLaw(E,U, n0=n0, err=err, maxiter=maxiter, r=r)
-make_king_fitfun(n) = (E,U) -> KingLaw(E,U,n)
+makekingfitfun(n) = (E,U) -> KingLaw(E,U,n)
 
 
 """
@@ -466,7 +466,7 @@ If positional argument `n` is provided, the power law exponent `n` is fixed.
 
 ## Examples
 
-```jldoctest
+```@example
 julia> U = 1.0:0.2:5.0; E = sqrt.(2.0 .+ 2.0 * sqrt.(U));
 
 julia> f = make_kingpoly_fitfun(0.5, N=1)
@@ -482,20 +482,20 @@ julia> f(E,U)
 KingPoly{Float64}(Polynomial(-1.0000000000747002 + 0.5000000000839081*E² - 2.7206927950106985e-11*E²^2 + 3.720669121046541e-12*E²^3 - 2.8588084742629384e-13*E²^4 + 9.220384116667572e-15*E²^5), 0.49999999998346645)
 ```
 """
-make_kingpoly_fitfun(;N=5, n0=0.45, err=1e-8, maxiter=200, r=1.0) =
+makekingpolyfitfun(;N=5, n0=0.45, err=1e-8, maxiter=200, r=1.0) =
     (E,U) -> KingPoly(E,U, N=N, n0=n0, err=err, maxiter=maxiter, r=r)
-make_kingpoly_fitfun(n; N=5) = (E,U) -> KingPoly(E,U, n, N=N)
+makekingpolyfitfun(n; N=5) = (E,U) -> KingPoly(E,U, n, N=N)
 
 
 """
-     `make_poly_fitfun(N)`
+     `makepolyfitfun(N)`
 
 This is a helper function that returns an anonymous function that is able to fit
-calibration data to polynomial of degree `N`. The curve fitting itself is carried out by  the method `fit`, [`Polynomials.fit`](@ref) in package `Polynomials`.
+calibration data to polynomial of degree `N`. The curve fitting itself is carried out by  the method `fit`, `Polynomials.fit` in package `Polynomials`.
 
 ## Examples
 
-```jldoctest
+```@example
 julia> U = 1.0:0.2:5.0; E = sqrt.(2.0 .+ 2.0 * sqrt.(U));
 
 julia> f = make_poly_fitfun(5)

@@ -17,7 +17,7 @@ where `a` is the overheat ratio, `Rw` is the operating resistance of the element
 `Ro` is the reference resistance (resistance at reference temperature).
 
 """
-struct CTASensor{Correct<:AbstractAnemCorrect,Fit,Fluid,U,RT} <: AbstractCTA
+struct CTASensor{Calibr,U,RT} <: AbstractCTA
     "Temperature dependent resistor"
     R::RT
     "Operating resistance of the sensor"
@@ -27,17 +27,14 @@ struct CTASensor{Correct<:AbstractAnemCorrect,Fit,Fluid,U,RT} <: AbstractCTA
     "Voltage output gain"
     gain::U
     "Calibration curve U = cal(E)"
-    cal::Fit
-    "Thermal model of the sensor"
-    corr::Correct
-    "Calibration fluid"
-    fluid::Fluid
+    cal::Calibr
 end
 
 Base.broadcastable(sensor::CTASensor) = Ref(sensor)
 
-CTASensor(R::RT, Rw, gain, cal, corr,fluid=AIR) where {RT<:AbstractResistor} =
-    CTASensor(R, Rw, temperature(R,Rw), gain, cal, corr)
+#CTASensor(R::RT, Rw, gain, cal, corr,fluid=AIR) where {RT<:AbstractResistor} =
+#
+CTASensor(R, Rw, temperature(R,Rw), gain, cal, corr)
 resistor(w::AbstractCTA) = w.R
 
 "Operating resistance of the CTA"
@@ -59,35 +56,43 @@ overtemp(w::AbstractCTA) = temperature(w) - reftemp(w)
 
 gain(w::AbstractCTA) = w.gain
 
-calibr(w::CTASensor) = w.cal
+calibr(w::AbstsractThermalAnemometer) = w.cal
 fluid(c::AbstractThermalAnemometer) = c.fluid
+pressure(w::AbstractThermalAnemometer) = pressure(calibr(w))
 
-
-function velocity(w::CTASensor{AC}, E,
-                  tc::TempCorr, mc::AC) where {AC<:AbstractAnemCorrect}
-    cal = calibr(w)
+function correction(w::CTASensor{AC}, E;
+                    T=reftemp(w.cal), Rw=resistance(w),
+                    fluid=fluid(w.cal), P=pressure(w.cal)) where {AC}
     g = gain(w)
-    Ec = anemcorrect(E/g, cal.temp, cal.corr, tc, mc)
-    return  cal(g*Ec) * (kinvisc(mc) /  kinvisc(cal.corr))
+    # Voltage accross resistive element
+    E1 = E / g
+    
+    R = resistor(w)
+    Tw = temperature(R, Rw)
+
+    # Operating conditions
+    tc = TempCorrect(T, Rw, Tw)
+    # Model at operating conditions
+    correction(calibt(w), E, tc, fluid, P) * g
 end
+
+function velocity(w::CTASensor, E;
+                  T=reftemp(w.cal), Rw=resistance(w),
+                  fluid=fluid(w.cal), P=pressure(w.cal))
+    Ec = correction(w, E; T=T, Rw=Rw, fluid=fluid, P=P)
+end
+
+
 
 velocity(w::CTASensor, E::Real) = calibr(w).fit(E)
 
-function velocity(w::CTASensor, E;
-                  T=reftemp(w.corr), P=101325.0,
-                  x=fluid(w.corr),R=resistance(w.corr))
-    
-    g = gain(w)
-    if R != resistance(w.corr)
-        Tw = temperature(R)
-    else
-        Tw = temperature(w.corr)
-    end
-    Ec = anemcorrect(E/g, w.corr, T, P, x, R, Tw)
-    return  g*cal(Ec) * (kinvisc(meas) /  kinvisc(w.corr))
-end
+(w::CTASensor)(E) = velocity(w, E)
+(w::CTASensor)(E; T=reftemp(w.cal), Rw=resistance(w),
+               fluid=fluid(w.cal), P=pressure(w.cal)) = velocity(w, E,
+                                                                 T=T,Rw=Rw,
+                                                                 fluid=fluid, P=P)
 
-    
+
         
                   
                   

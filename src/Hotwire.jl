@@ -5,11 +5,19 @@ import Polynomials: Polynomial
 
 export Thermistor, Resistor, AbstractResistor, temperature, resistance
 export reftemp, refresist
+
+export ConstPropFluid, heatcond, prandtl, viscosity, kinvisc, density, specheat
+export AIR, HELIUM, NITROGEN, C3H8, OXYGEN, IdealGas
+
+export AbstractAnemCorrect, TempCorrect, WireCorrect, GlassbeadCorrect, TOnlyCorrect
+export mf58correct, anemcorrect, anemcorrectfactor
+    
+
+export CalibrCurve, correctmodel, correction, pressure
+
 export CTASensor, Wire, resistor, overheatratio, overtemp, gain
 export AbstractThermalAnemometer
 export CCASensor, current
-export tempcorr
-export calibr_curve, CalibrCurve
 export KingLaw, KingPoly, Polynomial
 export make_king_fitfun, make_kingpoly_fitfun, make_poly_fitfun
 

@@ -167,7 +167,7 @@ Now, we have:
 ``X = hA + N\sqrt{\gamma h k_f A_f P} = f(Re)\frac{k\cdot Pr^n}{D}\cdot A + N\sqrt{\frac{f(Re)\cdot k \cdot Pr^n\gamma k_f A_f P_f}{D}} = c_1 \cdot f(Re) \phi + c_2 \sqrt{ f(Re)\phi}``
 
 where
- * ``phi = k\cdot Pr^n``
+ * ``\phi = k\cdot Pr^n``
  * ``c_1 = A/D``
  * ``c_2 = N\sqrt{\gamma k_f A_f P_f / D}``
 

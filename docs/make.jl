@@ -1,5 +1,6 @@
 using Hotwire
 using Documenter
+import Polynomials
 
 DocMeta.setdocmeta!(Hotwire, :DocTestSetup, :(using Hotwire); recursive=true)
 
