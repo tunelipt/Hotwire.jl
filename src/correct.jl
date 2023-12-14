@@ -132,6 +132,7 @@ end
 
 """
 `WireCorrect(ν, ϕ, n)`
+`WireCorrect(tc::TempCorrect, fluid, P, n)`
 `WireCorrect(c::WireCorrect, tc::TempCorrect, fluid, P)`
 
 Creates `WireCorrect` object. This object allows the correction for thermal anemometer output when the surface of the resistive element _is_ equal to the temperature of the resitive element.
@@ -154,20 +155,24 @@ In order to conform to the API, the second form build a new `WireCorrect` object
  * `P` Fluid pressure
 
 """
-function WireCorrect(c::WireCorrect, tc::TempCorrect, fluid, P=101325.0)
+function WireCorrect(tc::TempCorrect, fluid, P=101325.0, n=1/3)
     T = reftemp(tc)
-    
-    ρ = density(fluid, T, P)
-    μ = viscosity(fluid, T, P)
-    cₚ = specheat(fluid, T, P)
-    k = heatcond(fluid, T, P)
+    Tw = temperature(tc)
+    Tm = (T+Tw)/2  # Film temperature
+    ρ = density(fluid, Tm, P)
+    μ = viscosity(fluid, Tm, P)
+    cₚ = specheat(fluid, Tm, P)
+    k = heatcond(fluid, Tm, P)
 
     Pr = cₚ * μ / k
     ν  = μ / ρ
-    ϕ = k * Pr^c.n
+    ϕ = k * Pr^n
     
     WireCorrect(ν, ϕ, n)
 end
+WireCorrect(c::WireCorrect, tc::TempCorrect, fluid, P=101325.0) =
+    WireCorrect(tc, fluid, P, c.n)
+
 
 function anemcorrect(E, tc_cal::TempCorrect, mc_cal::WireCorrect,
                      tc::TempCorrect, mc::WireCorrect) 
@@ -176,7 +181,7 @@ function anemcorrect(E, tc_cal::TempCorrect, mc_cal::WireCorrect,
     return E*sqrt(mc_cal.ϕ/mc.ϕ) * f
 end
 
-struct GlassbeadCorrect{U<:Real,Fluid} <: AbstractAnemCorrect
+struct GlassbeadCorrect{U<:Real} <: AbstractAnemCorrect
     "Calibration kinematic viscosity"
     ν::U
     "Calibration k⋅Prⁿ"
@@ -223,10 +228,12 @@ maintaining everything else and the following arguments are used
 function GlassbeadCorrect(c::GlassbeadCorrect, tc::TempCorrect, fluid, P=101325.0)
 
     T = reftemp(tc)
-    ρ = density(x, T, P)
-    μ = viscosity(x, T, P)
-    cₚ = specheat(x, T, P)
-    k = heatcond(x, T, P)
+    Tw = temperature(tc)
+    Tm = (T+Tw) / 2
+    ρ = density(fluid, Tm, P)
+    μ = viscosity(fluid, Tm, P)
+    cₚ = specheat(fluid, Tm, P)
+    k = heatcond(fluid, Tm, P)
     
     Pr = cₚ * μ / k
     ν  = μ / ρ
@@ -283,19 +290,19 @@ With this correlation, we have
 
 A [`GlassbeadCorrect`](@ref) object
 """
-function mf58correct(tc::TempCorrect; P=101_325.0, n=1/3, q=0.4,
-                     N=2, beta=150.0, fluid=Air,
-                     D=2e-3, L=4e-3, d=0.5e-3, kf=30.0)
+function mf58correct(tc::TempCorrect, fluid=AIR, P=101_325.0; n=1/3, q=0.4,
+                     N=2, beta=150.0, D=2e-3, L=4e-3, d=0.5e-3, kf=30.0)
     Tw = temperature(tc)
     Rw = resistance(tc)
     T = reftemp(tc)
-    ρ = density(fluid, T, P)
-    μ = viscosity(fluid, T, P)
-    kₐ = heatcond(fluid, T, P)
-    cₚ = specheat(fluid, T, P)
+    Tm = (Tw + T) / 2
+    ρ = density(fluid, Tm, P)
+    μ = viscosity(fluid, Tm, P)
+    kₐ = heatcond(fluid, Tm, P)
+    cₚ = specheat(fluid, Tm, P)
     
     ν = μ / ρ
-    Pr = cₚ * μ / k
+    Pr = cₚ * μ / kₐ
     ϕ = kₐ * Pr^n
 
     #D = 2.0e-3 # Diameter of thew glass body
@@ -310,7 +317,7 @@ function mf58correct(tc::TempCorrect; P=101_325.0, n=1/3, q=0.4,
     
     γ = sqrt(d/D) # Convection coefficient factor
     
-    β = beta  # Ts = Tw - β⋅Q̇
+    β = one(ϕ)*beta  # Ts = Tw - β⋅Q̇
     c2 = N * sqrt(γ*kf*Af*Pf/D)
     return GlassbeadCorrect(ν, ϕ, n, β, c1, c2)
 end   
@@ -344,7 +351,7 @@ function anemcorrect(E, tc_cal::TempCorrect, mc_cal::GlassbeadCorrect,
     Xc = c1*fc*ϕc + c2*sqrt(fc*ϕc)
     Yc = Xc / (1 + β*Xc)
     
-    return E*sqrt(Yc * Rwc * (Twc - Tac))
+    return sqrt(Yc * Rwc * (Twc - Tac))
     
 end
 
