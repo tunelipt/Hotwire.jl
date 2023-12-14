@@ -32,6 +32,11 @@ struct ConstPropFluid{T,U,V,W}
     cp::W
 end
 
+ConstPropFluid(fluid, T, P) = ConstPropFluid(density(fluid, T, P),
+                                             viscosity(fluid, T, P),
+                                             heatcond(fluid, T, P),
+                                             specheat(fluid, T, P))
+
 "Computes the heat conductivity of a fluid in W/mK"
 heatcond(x::ConstPropFluid, T, P=101325.0) = x.k
 

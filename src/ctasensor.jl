@@ -34,7 +34,7 @@ Base.broadcastable(sensor::CTASensor) = Ref(sensor)
 
 #CTASensor(R::RT, Rw, gain, cal, corr,fluid=AIR) where {RT<:AbstractResistor} =
 #
-CTASensor(R, Rw, temperature(R,Rw), gain, cal, corr)
+#CTASensor(R, Rw, temperature(R,Rw), gain, cal, corr)
 resistor(w::AbstractCTA) = w.R
 
 "Operating resistance of the CTA"
@@ -56,7 +56,7 @@ overtemp(w::AbstractCTA) = temperature(w) - reftemp(w)
 
 gain(w::AbstractCTA) = w.gain
 
-calibr(w::AbstsractThermalAnemometer) = w.cal
+calibr(w::AbstractThermalAnemometer) = w.cal
 fluid(c::AbstractThermalAnemometer) = c.fluid
 pressure(w::AbstractThermalAnemometer) = pressure(calibr(w))
 
@@ -76,21 +76,11 @@ function correction(w::CTASensor{AC}, E;
     correction(calibt(w), E, tc, fluid, P) * g
 end
 
-function velocity(w::CTASensor, E;
-                  T=reftemp(w.cal), Rw=resistance(w),
-                  fluid=fluid(w.cal), P=pressure(w.cal))
-    Ec = correction(w, E; T=T, Rw=Rw, fluid=fluid, P=P)
-end
 
 
-
-velocity(w::CTASensor, E::Real) = calibr(w).fit(E)
+velocity(w::CTASensor, E) = calibr(w).fit(E)
 
 (w::CTASensor)(E) = velocity(w, E)
-(w::CTASensor)(E; T=reftemp(w.cal), Rw=resistance(w),
-               fluid=fluid(w.cal), P=pressure(w.cal)) = velocity(w, E,
-                                                                 T=T,Rw=Rw,
-                                                                 fluid=fluid, P=P)
 
 
         

@@ -83,9 +83,6 @@ function correction(cal::CalibrCurve{Correct}, E, tc::TempCorrect,
 end
 
 
-function correction(cal::CalibrCurve{Correct}, E, tc, fluid, P)
-    mc_cal = 
-
 
 (cal::CalibrCurve)(E::Real) = cal.fit(E)
 

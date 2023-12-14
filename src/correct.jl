@@ -48,7 +48,7 @@ anemcorrectfactor(cal::TempCorrect, op::TempCorrect) =
     (temperature(cal) - reftemp(cal)) / (temperature(op) - reftemp(op)))
 
 anemcorrectfactor(cal::TempCorrect; T=reftemp(cal), Rw=resistance(cal),
-                  Tw=temperature(cal)) = anemcorrectfactor(cal, TempCorr(T,Rw,Tw))
+                  Tw=temperature(cal)) = anemcorrectfactor(cal, TempCorrect(T,Rw,Tw))
 
 (cal::TempCorrect)(op::TempCorrect) = anemcorrectfactor(cal, op)
 (cal::TempCorrect)(; T=reftemp(cal), Rw=resistance(cal), Tw=temperature(cal)) =
