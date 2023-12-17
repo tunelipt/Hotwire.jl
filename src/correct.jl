@@ -112,6 +112,12 @@ function TOnlyCorrect(c::TOnlyCorrect, tc::TempCorrect, fluid, P=101325.0)
     return TOnlyCorrect(ν)
 end
 
+function anemcorrect(E, tc_cal, mc_cal::AC, T, Tw, Rw, fluid, Pa) where{AC}
+    tc = TempCorrect(T,Rw,Tw)
+    mc = AC(mc_cal, tc, fluid, Pa)
+    return anemcorrect(E, tc_cal, mc_cal, tc, mc)
+end
+#WireCorrect(c::WireCorrect, tc::TempCorrect, fluid, P=101325.0) =
 
 function anemcorrect(E, tc_cal::TempCorrect, mc_cal::TOnlyCorrect,
                      tc::TempCorrect, mc::TOnlyCorrect) 
@@ -225,7 +231,8 @@ maintaining everything else and the following arguments are used
  * `P`  Atmospheric pressure in ``Pa``
 
 """
-function GlassbeadCorrect(c::GlassbeadCorrect, tc::TempCorrect, fluid, P=101325.0)
+function GlassbeadCorrect(c::GlassbeadCorrect{U}, tc::TempCorrect,
+                          fluid, P=101325.0) where {U}
 
     T = reftemp(tc)
     Tw = temperature(tc)
@@ -238,9 +245,10 @@ function GlassbeadCorrect(c::GlassbeadCorrect, tc::TempCorrect, fluid, P=101325.
     Pr = cₚ * μ / k
     ν  = μ / ρ
     
-    return GlassbeadCorrect(ν, k*Pr^c.n, c.n, c.β, c.c1, c.c2)
+    return GlassbeadCorrect{U}(U(ν), U(k*Pr^c.n), U(c.n), U(c.β), U(c.c1), U(c.c2))
     
 end
+
 
 """
 `mf58correct(tc::TempCorrect; P=101_325.0, n=1/3, q=0.4,
