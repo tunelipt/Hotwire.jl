@@ -40,7 +40,7 @@ pressure(c::AbstractAnemCorrect) = c.P
 fluid(c::AbstractAnemCorrect) = c.fluid
 
 """
-`TempCorrect(T, Rw, Tw, P, ν)`
+`TempCorrect(T, Rw, Tw, P, fluid, ν)`
 `TempCorrect(c::TempCorrect; T=reftemp(c), P=Rw=resistance(c), Tw=temperature(c))`
 
 Creates a `TempCorrect` object. The `TempCorrect` struct stores information on
@@ -53,6 +53,8 @@ function TempCorrect(c::TempCorrect, T, P, fluid, Rw, Tw)
     TempCorrect(T,Rw,Tw,P,fluid,ν)
 end
 
+TempCorrect(T, P, fluid, Rw, Tw) = TempCorrect(T, Rw, Tw, P, fluid,
+                                               kinvisc(fluid, (T+Tw)/2, P))
 
 """
 `tempcorrect(c::AC, op::AC) where {AC<:AbstractAnemCorrect}`
@@ -65,9 +67,9 @@ Given a thermal anemometer with operating conditions specified by `c`,
  and the output of the thermal anemometer at different operating conditions given by
 `op::TempCorrect` or by fluid  temperature `T`, operating resistance `Rw` and operating temperature `Tw`.
 """
-tempcorrect(Tc,Rwc,Twc, T,Rw,Tw) = sqrt( Rwc/Rw  * (Twc-Tc)/(Tw-Tc) )
+tempcorrect(Tc,Rwc,Twc, T,Rw,Tw) = sqrt( Rwc/Rw  * (Twc-Tc)/(Tw-T) )
 
-tempcorrect(cal::AC, op::AC) where {AC<:AbstractAnemCorrect} =
+tempcorrect(cal::AbstractAnemCorrect, op::AbstractAnemCorrect) =
     sqrt(resistance(cal)/resistance(op) *
     (temperature(cal) - reftemp(cal)) / (temperature(op) - reftemp(op)))
 
