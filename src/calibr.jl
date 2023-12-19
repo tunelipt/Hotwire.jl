@@ -32,59 +32,21 @@ Different models to correct are possible. This package implements the following 
 struct CalibrCurve{Correct,Fluid,Fit,TCorr,U} <: AbstractCalibr1d
     "Anemometer calibration curve"
     fit::Fit
-    "Calibration fluid"
-    fluid::Fluid
-    "Operating conditions of the anemometer"
-    temp::TCorr
     "Correction algorithm"
     corr::Correct
-    "Calibration pressure in Pa"
-    P::U
 end
 
 Base.broadcastable(cal::CalibrCurve) = Ref(cal)
 
-reftemp(cal::CalibrCurve) = reftemp(cal.temp)
-resistance(cal::CalibrCurve) = resistance(cal.temp)
-temperature(cal::CalibrCurve) = temperature(cal.temp)
-fluid(cal::CalibrCurve) = cal.fluid
-pressure(cal::CalibrCurve) = cal.P
+reftemp(cal::CalibrCurve) = reftemp(cal.corr)
+resistance(cal::CalibrCurve) = resistance(cal.corr)
+temperature(cal::CalibrCurve) = temperature(cal.corr)
+fluid(cal::CalibrCurve) = fluid(cal.corr)
+pressure(cal::CalibrCurve) = pressure(cal.corr)
 
 correctmodel(cal::CalibrCurve) = cal.corr
 
 
-
-"""
-`correction(cal, E, tc, mc)`
-
-Corrects anemometer output of an anemoeter to different operating conditions
-
-## Arguments
- * `cal` [`CalibrCurve`](@ref) object with calibration of the sensor
- * `E` voltage accross resistance element of the sensor
- * `tc` [`TempCorrect`](@ref) with operating conditions
- * `mc` [`AbstractAnemCorrect`](@ref) correction model in operating conditions
-
-
-
-"""
-function correction(cal::CalibrCurve{Correct}, E, 
-                    tc::TempCorrect, mc::Correct) where {Correct}
-    
-    anemcorrect(E, cal.temp, cal.corr, tc, mc)
-    
-end
-
-function correction(cal::CalibrCurve{Correct}, E, tc::TempCorrect,
-                    fluid=fluid(cal), P=pressure(cal)) where {Correct}
-    
-    anemcorrect(E, cal.temp, cal.corr, tc, mc)
-    
-end
-
-
-
-(cal::CalibrCurve)(E::Real) = cal.fit(E)
 
 
 
