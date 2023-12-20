@@ -10,7 +10,7 @@ export ConstPropFluid, heatcond, prandtl, viscosity, kinvisc, density, specheat
 export AIR, HELIUM, NITROGEN, C3H8, OXYGEN, IdealGas
 
 export AbstractAnemCorrect, TempCorrect, WireCorrect, GlassbeadCorrect
-export mf58correct, anemcorrect, tempcorrect
+export mf58correct, correct, tempcorrect
     
 
 export CalibrCurve, correctmodel, correction, pressure

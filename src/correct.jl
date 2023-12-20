@@ -82,8 +82,8 @@ correctmodel(mc::TempCorrect, T, P, fluid, Rw, Tw) =
 
 
 """
-`anemcorrect(E, mc_cal, mc)`
-`anemcorrect(E, mc_cal, T, P, fluid, Rw, Tw)`
+`correct(E, mc_cal, mc)`
+`correct(E, mc_cal, T, P, fluid, Rw, Tw)`
 Corrects the output of a thermal anemometer with respect to varying operating
 conditions such as electronics, fluid composition, temperature and pressure.
 
@@ -109,10 +109,10 @@ Corrected anemometer output at calibration conditions.
 
 
 """
-anemcorrect(E, cal::TempCorrect, T, P, fluid, Rw, Tw) =
+correct(E, cal::TempCorrect, T, P, fluid, Rw, Tw) =
     E * tempcorrect(cal, T, Rw, Tw)
 
-anemcorrect(E, cal::TempCorrect, op::TempCorrect) = E*tempcorrect(cal,op)
+correct(E, cal::TempCorrect, op::TempCorrect) = E*tempcorrect(cal,op)
 
 
 
@@ -183,15 +183,15 @@ WireCorrect(c::WireCorrect, T, P, fluid, Rw, Tw) =
 correctmodel(mc::WireCorrect, T, P, fluid, Rw, Tw) =
     WireCorrect(T, P, fluid, Rw, Tw, mc.n) 
 
-function anemcorrect(E, mc_cal::WireCorrect, mc::WireCorrect) 
+function correct(E, mc_cal::WireCorrect, mc::WireCorrect) 
     
     f = tempcorrect(mc_cal, mc)
     return E*sqrt(mc_cal.ϕ/mc.ϕ) * f
 end
 
-function anemcorrect(E, mc_cal::WireCorrect, T, P, fluid, Rw, Tw)
+function correct(E, mc_cal::WireCorrect, T, P, fluid, Rw, Tw)
     mc = WireCorrect(mc_cal, T, P, fluid, Rw, Tw)
-    return anemcorrect(E, mc_cal, mc)
+    return correct(E, mc_cal, mc)
 end
 
 
@@ -348,7 +348,7 @@ function mf58correct(T, P, fluid, Rw, Tw; n=1/3, q=0.4,
 end   
 
 
-function anemcorrect(E, mc_cal::GlassbeadCorrect, mc::GlassbeadCorrect)
+function correct(E, mc_cal::GlassbeadCorrect, mc::GlassbeadCorrect)
     
     Rwc = resistance(mc_cal)
     Twc = temperature(mc_cal)
@@ -379,6 +379,6 @@ function anemcorrect(E, mc_cal::GlassbeadCorrect, mc::GlassbeadCorrect)
     
 end
 
-anemcorrect(E, mc_cal::GlassbeadCorrect, T, P, fluid, Rw, Tw) = 
-    anemcorrect(E, mc_cal, correctmodel(mc_cal, T, P, fluid, Rw, Tw))
+correct(E, mc_cal::GlassbeadCorrect, T, P, fluid, Rw, Tw) = 
+    correct(E, mc_cal, correctmodel(mc_cal, T, P, fluid, Rw, Tw))
 

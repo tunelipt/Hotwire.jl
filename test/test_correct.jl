@@ -33,11 +33,11 @@ let
     @test tempcorrect(tc2, tc4) ≈ 1 / tempcorrect(tc4, tc2)
 
     E = 6.0
-    @test anemcorrect(E, tc1, tc2) ≈ tempcorrect(tc1, tc2)*E
-    @test anemcorrect(E, tc1, tc3) ≈ tempcorrect(tc1, tc3)*E
-    @test anemcorrect(E, tc1, tc4) ≈ tempcorrect(tc1, tc4)*E
-    @test anemcorrect(E, tc2, tc3) ≈ tempcorrect(tc2, tc3)*E
-    @test anemcorrect(E, tc3, tc4) ≈ tempcorrect(tc3, tc4)*E
+    @test correct(E, tc1, tc2) ≈ tempcorrect(tc1, tc2)*E
+    @test correct(E, tc1, tc3) ≈ tempcorrect(tc1, tc3)*E
+    @test correct(E, tc1, tc4) ≈ tempcorrect(tc1, tc4)*E
+    @test correct(E, tc2, tc3) ≈ tempcorrect(tc2, tc3)*E
+    @test correct(E, tc3, tc4) ≈ tempcorrect(tc3, tc4)*E
     
 end
 
@@ -65,9 +65,9 @@ let
     corr3 = WireCorrect(corr1, T1, P, AIRconst, Rw1, Tw1)
     
     E = 6.0
-    @test anemcorrect(E, corr1, corr1) ≈ E
-    @test anemcorrect(E, corr1, corr2) ≈ E*tempcorrect(corr1, corr2)
-    @test anemcorrect(E, corr1, corr3) ≈ E*tempcorrect(corr1, corr3)
+    @test correct(E, corr1, corr1) ≈ E
+    @test correct(E, corr1, corr2) ≈ E*tempcorrect(corr1, corr2)
+    @test correct(E, corr1, corr3) ≈ E*tempcorrect(corr1, corr3)
     
 end
 
@@ -92,7 +92,7 @@ let
     corr1 = WireCorrect(T1, P, x1, Rw, Tw, n)
     corr2 = WireCorrect(T1, P, x2, Rw, Tw, n)
     E = 1.0
-    @test anemcorrect(E, corr1, corr2) ≈ E * sqrt(ϕ₁/ϕ₂)
+    @test correct(E, corr1, corr2) ≈ E * sqrt(ϕ₁/ϕ₂)
 
 end
 
@@ -134,9 +134,9 @@ let
     @test ϕ₂ ≈ corr2.ϕ
     @test ϕ₃ ≈ corr3.ϕ
     
-    @test anemcorrect(E, corr1, corr1) ≈ E
-    @test anemcorrect(E, corr1, corr2) ≈ E*sqrt(ϕ₁/ϕ₂)*tempcorrect(corr1,corr2)
-    @test anemcorrect(E, corr1, corr3) ≈ E*sqrt(ϕ₁/ϕ₃)*tempcorrect(corr1,corr3)
+    @test correct(E, corr1, corr1) ≈ E
+    @test correct(E, corr1, corr2) ≈ E*sqrt(ϕ₁/ϕ₂)*tempcorrect(corr1,corr2)
+    @test correct(E, corr1, corr3) ≈ E*sqrt(ϕ₁/ϕ₃)*tempcorrect(corr1,corr3)
     
 end
 
@@ -167,9 +167,9 @@ let
     corr3 = GlassbeadCorrect(corr1, T1, P, x1, Rw1, Tw1)
     
     E = 6.0
-    @test anemcorrect(E, corr1, corr1) ≈ E
-    @test anemcorrect(E, corr1, corr2) ≈ E*tempcorrect(corr1, corr2)
-    @test anemcorrect(E, corr1, corr3) ≈ E*tempcorrect(corr1, corr3)
+    @test correct(E, corr1, corr1) ≈ E
+    @test correct(E, corr1, corr2) ≈ E*tempcorrect(corr1, corr2)
+    @test correct(E, corr1, corr3) ≈ E*tempcorrect(corr1, corr3)
     
 
 end
@@ -208,9 +208,9 @@ let
     gb3 = GlassbeadCorrect(gb1, T1, P, HELIUM, Rw1, Tw1)
 
     E = 6.0
-    @test anemcorrect(E, gb1, gb1) ≈ E
-    @test anemcorrect(E, gb1, gb2) ≈ anemcorrect(E, cw1, cw2)
-    @test anemcorrect(E, gb1, gb3) ≈ anemcorrect(E, cw1, cw3)
+    @test correct(E, gb1, gb1) ≈ E
+    @test correct(E, gb1, gb2) ≈ correct(E, cw1, cw2)
+    @test correct(E, gb1, gb3) ≈ correct(E, cw1, cw3)
     
 
 end
