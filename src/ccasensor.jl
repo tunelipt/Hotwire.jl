@@ -17,19 +17,13 @@ where `a` is the overheat ratio, `Rw` is the operating resistance of the element
 `Ro` is the reference resistance (resistance at reference temperature).
 
 """
-struct CCASensor{Correct,Calibr,Fluid,U,RT} <: AbstractCCA
+struct CCASensor{U,RT} <: AbstractCCA
     "Temperature dependent resistor"
     R::RT
     "Operating electrical current"
     I::U
     "Voltage output gain"
     gain::U
-    "Calibration curve"
-    cal::Calibr
-    "Calibration fluid"
-    fluid::Fluid
-    "Thermal model of the sensor"
-    corr::Correct
 end
 
 Base.broadcastable(sensor::CTASensor) = Ref(sensor)
@@ -46,41 +40,3 @@ refresist(w::CCASensor) = refresist(w.R)
 
 gain(w::AbstractCCA) = w.gain
 
-calibr(w::CCASensor) = w.cal
-
-
-function velocity(w::CCASensor{AC}, E,
-                  meas::AC, I=current(w)) where {AC<:AbstractAnemCorrect}
-    cal = calibr(w)
-    g = gain(w)
-    E1 = E / g
-    Rw = E1 / w.I
-    Tw = temperature(w.R, Rw)
-    # Still need to fine tune the interface. Bu this is not important for now...
-    Ec = anemcorrect(E1, w.corr, meas)
-    return  g*cal(Ec) * (kinvisc(meas) /  kinvisc(w.corr))
-end
-
-(w::CCASensor{AC})(E, meas::AC) where {AC<:AbstractAnemCorrect} = velocity(w,E,meas)
-
-
-function velocity(w::CCASensor{Correct}, E;
-                  T=reftemp(w.corr), P=101325.0,
-                  x=fluid(w.corr),R=resistance(w.corr)) where {Correct}
-
-    if R != resistance(w.corr)
-        Tw = temperature(R)
-    else
-        Tw = temperature(w.corr)
-    end
-    meas = Correct(w.corr, T, Rw, Tw)
-    return velocity(w, E, meas, current(w))
-end
-
-    
-(w::CCASensor{Correct})(E;
-                  T=reftemp(w.corr), P=101325.0,
-                  x=fluid(w.corr),R=resistance(w.corr)) where {Correct}        
-                  
-                  
-   
