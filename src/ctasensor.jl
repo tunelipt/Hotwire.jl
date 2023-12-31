@@ -17,7 +17,7 @@ where `a` is the overheat ratio, `Rw` is the operating resistance of the element
 `Ro` is the reference resistance (resistance at reference temperature).
 
 """
-struct CTASensor{U,RT} <: AbstractCTA
+struct CTASensor{Correct,U,RT,Fit} <: AbstractCTA
     "Temperature dependent resistor"
     R::RT
     "Operating resistance of the sensor"
@@ -26,6 +26,10 @@ struct CTASensor{U,RT} <: AbstractCTA
     Tw::U
     "Voltage output gain"
     gain::U
+    "Correction model"
+    corr::Correct
+    "Calibration curve"
+    fit::Fit
 end
 
 Base.broadcastable(sensor::CTASensor) = Ref(sensor)
@@ -50,5 +54,45 @@ overtemp(w::AbstractCTA,T) = temperature(w) - T
 overtemp(w::AbstractCTA) = temperature(w) - reftemp(w) 
 
 gain(w::AbstractCTA) = w.gain
+fluid(w::CTASensor) = fluid(w.corr)
+pressure(w::CTASensor) = pressure(w.corr)
+caltemp(w::CTASensor) = reftemp(w.corr)
 
    
+function correct(w::CTASensor, E;
+                 T=caltemp(w), P=pressure(w),
+                 fluid=fluid(w), Rw=resistance(w))
+    if Rw == resistance(w)
+        Tw = temperature(w)
+    else
+        Tw = temperature(resistor(w), Rw)
+    end
+    g = gain(w)
+    return correct(E/g, w.corr, T, P, fluid, Rw, Tw)*g
+    
+end
+
+
+
+function velocity(w::CTASensor, E;
+                 T=caltemp(w), P=pressure(w),
+                 fluid=fluid(w), Rw=resistance(w))
+    if Rw == resistance(w)
+        Tw = temperature(w)
+    else
+        Tw = temperature(resistor(w))
+    end
+    g = gain(w)
+    Ec = correct(E/g, w.corr, T, P, fluid, Rw, Tw)*g
+    
+    ν_cal = kinvisc(w.corr)
+    ν     = kinvisc(fluid, (T+Tw)/2, P)
+    Uc = w.fit(Ec)
+    return ν / ν_cal * Uc
+end
+
+(w::CTASensor)(E; T=caltemp(w), P=pressure(w),
+                  fluid=fluid(w), Rw=resistance(w)) =
+                      velocity(w, E; T=T, P=P, fluid=fluid,
+                               Rw=Rw)
+

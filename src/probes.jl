@@ -7,11 +7,13 @@ abstract type AbstractProbe2d <: AbstractProbe end
 abstract type AbstractProbe3d <: AbstractProbe end
 
 
-mutable struct Probe1d{Anem<:AbstractThermalAnemometer,Calibr,Setup} <: AbstractProbe1d
+mutable struct Probe1d{Anem<:AbstractThermalAnemometer,Correct,Fit,Setup} <: AbstractProbe1d
     "Anemometer sensor information"
     sensor::Anem
-    "Calibration data"
-    cal::Calibr
+    "Correction model"
+    corr::Correct
+    "Calibration curve"
+    fit::Fit
     "Anemometer setup"
     setup::Setup
 end
@@ -28,35 +30,30 @@ information on calibration, bridge configuration, output filter, etc.
  - `cal`: `CalibrCurve` object
 
 """
-function Probe1d(sensor, cal, setup="")
-    return Probe1d(sensor, cal, setup)
-end
-
-reftemp(anem::Probe1d) = reftemp(anem.sensor)
-velocity(anem::Probe1d, E, args...; kw...) = velocity(anem.sensor, E, args..., kw...)
-
-anem::Probe1d(E,args..., kw...) = velocity(anem.sensor, E, args...; kw...)
+#function Probe1d(sensor, cal, setup="")
+#    return Probe1d(sensor, cal, setup)
+#end
 
 
+resistor(w::Probe1d) = resistor(w.sensor)
+sensor(w::Probe1d) = w.sensor
+gain(w::Probe1d) = gain(w.sensor)
+reftemp(w::Probe1d) = reftemp(w.sensor)
+resistance(w::Probe1d) = resistance(w.sensor)
 
-"""
-    `velocity!(anem, E, T, 1)`
+# Just get stuff for CTA
+temperature(w::Probe1d{<:AbstractCTA}) = temperature(w.sensor)
+refresist(w::Probe1d{<:AbstractCTA}) = refresist(w.sensor)
+overheatratio(w::Probe1d{<:AbstractCTA}) = overheatratio(w.sensor)
+overheatratio(w::Probe1d{<:AbstractCTA},T) =
+    overheatratio(w.sensor, T)
 
-Calculate, in place, the velocity from an anemometer. In this function, 
-the input is an abstract array where 1 column with the bridge output is given by argument `idx` represent the output of the anemometer. A unique temperature should be used.
+overtemp(w::Probe1d{<:AbstractCTA}) = overtemp(w.sensor)
+overtemp(w::Probe1d{<:AbstractCTA}, T) = overtemp(w.sensor, T)
 
-"""
-function velocity!(anem::Probe1d, E::AbstractMatrix, T, idx=1)
-
-    npts = size(E,1)
-    for i in 1:npts
-        U = anem(E[i,idx], T)
-        E[i,idx] = U
-    end
-end
+# Stuff for CCA
+current(w::Probe1d{<:AbstractCCA}) = current(w.sensor)
 
 
-    
-
-
+# Now let's actually do something with `Probe1d`
 

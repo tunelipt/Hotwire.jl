@@ -21,6 +21,7 @@ export CCASensor, current
 export KingLaw, KingPoly, Polynomial
 export make_king_fitfun, make_kingpoly_fitfun, make_poly_fitfun
 
+export sensor
 export AbstractProbe, AbstractProbe1d, AbstractProbe2d, AbstractProbe3d
 export HWCable, HWSupport, HWBridge
 export Probe1d, Probe2d, Probe3d
