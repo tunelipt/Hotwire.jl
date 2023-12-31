@@ -26,9 +26,8 @@ struct CCASensor{U,RT} <: AbstractCCA
     gain::U
 end
 
-Base.broadcastable(sensor::CTASensor) = Ref(sensor)
+Base.broadcastable(sensor::CCASensor) = Ref(sensor)
 
-CCASensor(R, Rw, gain, cal, corr) = CCASensor
 resistor(w::AbstractCCA) = w.R
 
 "Operating current of the CTA"

@@ -17,7 +17,7 @@ where `a` is the overheat ratio, `Rw` is the operating resistance of the element
 `Ro` is the reference resistance (resistance at reference temperature).
 
 """
-struct CTASensor{Correct,Fit,U,RT} <: AbstractCTA
+struct CTASensor{U,RT} <: AbstractCTA
     "Temperature dependent resistor"
     R::RT
     "Operating resistance of the sensor"
