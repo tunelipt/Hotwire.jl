@@ -13,6 +13,16 @@ abstract type AbstractAnemCorrect end
 
 
 
+struct CorrFactor{U,V}
+    "Correction factor"
+    f::U
+    "Kinematic viscosity"
+    nu::V
+end
+Base.broadcastable(f::CorrFactor) = Ref(f)
+
+kinvisc(f::CorrFactor) = f.nu
+corrfactor(f::CorrFactor) = f.f
 
 struct TempCorrect{U,Fluid} <: AbstractAnemCorrect
     "Fluid temperature"
@@ -110,9 +120,10 @@ Corrected anemometer output at calibration conditions.
 
 """
 correct(E, cal::TempCorrect, T, P, fluid, Rw, Tw) =
-    (tempcorrect(cal, T, Rw, Tw), kinvisc(fluid, (T+Tw)/2, P))
+    CorrFactor(tempcorrect(cal, T, Rw, Tw), kinvisc(fluid, (T+Tw)/2, P))
 
-correct(E, cal::TempCorrect, op::TempCorrect) = (tempcorrect(cal,op), kinvisc(op))
+correct(E, cal::TempCorrect, op::TempCorrect) =
+    CorrFactor(tempcorrect(cal,op), kinvisc(op))
 
 
 
@@ -186,7 +197,7 @@ correctmodel(mc::WireCorrect, T, P, fluid, Rw, Tw) =
 function correct(E, mc_cal::WireCorrect, mc::WireCorrect) 
     
     f = tempcorrect(mc_cal, mc)
-    return (sqrt(mc_cal.ϕ/mc.ϕ) * f, kinvisc(mc))
+    return CorrFactor(sqrt(mc_cal.ϕ/mc.ϕ) * f, kinvisc(mc))
 end
 
 function correct(E, mc_cal::WireCorrect, T, P, fluid, Rw, Tw)
@@ -375,7 +386,7 @@ function correct(E, mc_cal::GlassbeadCorrect, mc::GlassbeadCorrect)
     Xc = c1*fc*ϕc + c2*sqrt(fc*ϕc)
     Yc = Xc / (1 + β*Xc)
     
-    return (sqrt(Yc * Rwc * (Twc - Tac))/E, kinvisc(mc))
+    return CorrFactor(sqrt(Yc * Rwc * (Twc - Tac))/E, kinvisc(mc))
     
 end
 

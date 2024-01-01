@@ -7,16 +7,14 @@ abstract type AbstractProbe2d <: AbstractProbe end
 abstract type AbstractProbe3d <: AbstractProbe end
 
 
-mutable struct Probe1d{Anem<:AbstractThermalAnemometer,Correct,Fit,Setup} <: AbstractProbe1d
+mutable struct Probe1d{Anem<:AbstractThermalAnemometer,Setup} <: AbstractProbe1d
     "Anemometer sensor information"
     sensor::Anem
-    "Correction model"
-    corr::Correct
-    "Calibration curve"
-    fit::Fit
     "Anemometer setup"
     setup::Setup
 end
+
+Base.broadcastable(sensor::Probe1d) = Ref(sensor)
 
 """
     `Probe1d(sensor, cal, setup)`
@@ -56,4 +54,15 @@ current(w::Probe1d{<:AbstractCCA}) = current(w.sensor)
 
 
 # Now let's actually do something with `Probe1d`
+
+correct(w::Probe1d, E::Real; kw...) = correct(sensor(w), args...; kw...)
+velocity(w::Probe1d, E::Real; kw...) = velocity(sensor(w), E; kw...)
+velocity(w::Probe1d, E::Real, fc::CorrFactor) =
+    velocity(sensor(w), E, fc)
+
+(w::Probe1d)(E::Real; kw...) = velocity(E; kw...) =
+    velocity(sensor(w), E; kw...)
+
+(w::Probe1d)(E::Real, fc::CorrFactor) =
+    velocity(sensor(w), E, fc)
 

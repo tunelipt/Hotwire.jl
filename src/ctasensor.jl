@@ -90,16 +90,12 @@ function velocity(w::CTASensor, E;
     return ν / ν_cal * Uc
 end
 
-function velocity(w::CTASensor, E, (fc,ν))
+function velocity(w::CTASensor, E, fc::CorrFactor)
     ν_cal = kinvisc(w.corr)
-    Uc = w.fit(E*fc)
-    return ν/ν_cal * Uc
+    Uc = w.fit(E*fc.f)
+    return fc.nu/ν_cal * Uc
 end
 
-(w::CTASensor)(args...; kw...) = velocity(w, args...; kw...)
-
-#T=caltemp(w), P=pressure(w),
-#                  fluid=fluid(w), Rw=resistance(w)) =
-#                      velocity(w, E; T=T, P=P, fluid=fluid,
-#                               Rw=Rw)
-
+(w::CTASensor)(E::Real; kw...) = velocity(w, E; kw...)
+(w::CTASensor)(E::Real, fc::CorrFactor) = velocity(w, E, fc)
+                                           

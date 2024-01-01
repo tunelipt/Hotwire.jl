@@ -45,7 +45,7 @@ gain(w::AbstractCCA) = w.gain
 fluid(w::CCASensor) = fluid(w.corr)
 pressure(w::CCASensor) = pressure(w.corr)
 caltemp(w::CCASensor) = reftemp(w.corr)
-
+ 
 
 function correct(w::CCASensor, E;
                  T=caltemp(w), P=pressure(w),
@@ -74,10 +74,10 @@ function velocity(w::CCASensor, E;
     
 end
     
-function velocity(w::CCASensor, E, (fc,ν))
+function velocity(w::CCASensor, E, fc::CorrFactor)
     ν_cal = kinvisc(w.corr)
-    Uc = w.fit(E*fc)
-    return ν/ν_cal * Uc
+    Uc = w.fit(E*fc.f)
+    return fc.nu/ν_cal * Uc
 end
 
 (w::CCASensor)(args...; kw...) = velocity(w, args...; kw...)
