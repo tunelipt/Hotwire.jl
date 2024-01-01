@@ -110,9 +110,9 @@ Corrected anemometer output at calibration conditions.
 
 """
 correct(E, cal::TempCorrect, T, P, fluid, Rw, Tw) =
-    E * tempcorrect(cal, T, Rw, Tw)
+    (tempcorrect(cal, T, Rw, Tw), kinvisc(fluid, (T+Tw)/2, P))
 
-correct(E, cal::TempCorrect, op::TempCorrect) = E*tempcorrect(cal,op)
+correct(E, cal::TempCorrect, op::TempCorrect) = (tempcorrect(cal,op), kinvisc(op))
 
 
 
@@ -186,7 +186,7 @@ correctmodel(mc::WireCorrect, T, P, fluid, Rw, Tw) =
 function correct(E, mc_cal::WireCorrect, mc::WireCorrect) 
     
     f = tempcorrect(mc_cal, mc)
-    return E*sqrt(mc_cal.ϕ/mc.ϕ) * f
+    return (sqrt(mc_cal.ϕ/mc.ϕ) * f, kinvisc(mc))
 end
 
 function correct(E, mc_cal::WireCorrect, T, P, fluid, Rw, Tw)
@@ -375,7 +375,7 @@ function correct(E, mc_cal::GlassbeadCorrect, mc::GlassbeadCorrect)
     Xc = c1*fc*ϕc + c2*sqrt(fc*ϕc)
     Yc = Xc / (1 + β*Xc)
     
-    return sqrt(Yc * Rwc * (Twc - Tac))
+    return (sqrt(Yc * Rwc * (Twc - Tac))/E, kinvisc(mc))
     
 end
 

@@ -55,7 +55,7 @@ function correct(w::CCASensor, E;
     Rw = Ew / I # Resistance of the sensor
     Tw = temperature(resistor(w), Rw)
     
-    return correct(Ew, w.corr, T, P, fluid, Rw, Tw)*g
+    return correct(Ew, w.corr, T, P, fluid, Rw, Tw)
         
 end
 
@@ -67,11 +67,17 @@ function velocity(w::CCASensor, E;
     Rw = Ew / I # Resistance of the sensor
     Tw = temperature(resistor(w), Rw)
     
-    Ec = correct(Ew, w.corr, T, P, fluid, Rw, Tw)*g
-    Uc = w.fit(Ec)
+    (fc,ν) = correct(Ew, w.corr, T, P, fluid, Rw, Tw)
+    Uc = w.fit(E*fc)
     ν_cal = kinvisc(w.corr)
-    ν     = kinvisc(fluid, (T+Tw)/2, P)
     return ν / ν_cal * Uc
     
 end
     
+function velocity(w::CCASensor, E, (fc,ν))
+    ν_cal = kinvisc(w.corr)
+    Uc = w.fit(E*fc)
+    return ν/ν_cal * Uc
+end
+
+(w::CCASensor)(args...; kw...) = velocity(w, args...; kw...)
