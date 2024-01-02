@@ -7,7 +7,7 @@ abstract type AbstractProbe2d <: AbstractProbe end
 abstract type AbstractProbe3d <: AbstractProbe end
 
 
-mutable struct Probe1d{Anem<:AbstractThermalAnemometer,Setup} <: AbstractProbe1d
+struct Probe1d{Anem<:AbstractThermalAnemometer,Setup} <: AbstractProbe1d
     "Anemometer sensor information"
     sensor::Anem
     "Anemometer setup"
@@ -28,16 +28,15 @@ information on calibration, bridge configuration, output filter, etc.
  - `cal`: `CalibrCurve` object
 
 """
-#function Probe1d(sensor, cal, setup="")
-#    return Probe1d(sensor, cal, setup)
-#end
-
 
 resistor(w::Probe1d) = resistor(w.sensor)
 sensor(w::Probe1d) = w.sensor
 gain(w::Probe1d) = gain(w.sensor)
 reftemp(w::Probe1d) = reftemp(w.sensor)
+caltemp(w::Probe1d) = caltemp(w.sensor)
 resistance(w::Probe1d) = resistance(w.sensor)
+pressure(w::Probe1d) = pressure(w.sensor)
+fluid(w::Probe1d) = fluid(w.sensor)
 
 # Just get stuff for CTA
 temperature(w::Probe1d{<:AbstractCTA}) = temperature(w.sensor)
@@ -60,8 +59,7 @@ velocity(w::Probe1d, E::Real; kw...) = velocity(sensor(w), E; kw...)
 velocity(w::Probe1d, E::Real, fc::CorrFactor) =
     velocity(sensor(w), E, fc)
 
-(w::Probe1d)(E::Real; kw...) = velocity(E; kw...) =
-    velocity(sensor(w), E; kw...)
+(w::Probe1d)(E::Real; kw...) = velocity(sensor(w), E; kw...)
 
 (w::Probe1d)(E::Real, fc::CorrFactor) =
     velocity(sensor(w), E, fc)

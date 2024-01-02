@@ -15,7 +15,7 @@ export CorrFactor, corrfactor
 
 export CalibrCurve, correctmodel, correction, pressure
 
-export CTASensor, Wire, resistor, overheatratio, overtemp, gain
+export CTASensor, Wire, resistor, overheatratio, overtemp, gain,caltemp
 export AbstractThermalAnemometer
 export CCASensor, current
 export KingLaw, KingPoly, Polynomial
@@ -46,7 +46,7 @@ include("correct.jl")
 include("ctasensor.jl")
 include("ccasensor.jl")
 include("fit.jl")
-#include("probes.jl")
+include("probes.jl")
 #include("probe2d.jl")
 #include("probe3d.jl")
 #include("hardware.jl")

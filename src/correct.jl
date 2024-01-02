@@ -378,7 +378,7 @@ function correct(E, mc_cal::GlassbeadCorrect, mc::GlassbeadCorrect)
 
     c1 = mc_cal.c1
     c2 = mc_cal.c2
-
+    
     u = (-c2 + sqrt(c2*c2 + 4*c1*X)) / (2c1)
 
     fc = u*u / ϕ

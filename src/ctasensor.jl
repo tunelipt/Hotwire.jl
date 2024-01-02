@@ -73,6 +73,7 @@ function correct(w::CTASensor, E;
 end
 
 
+#velocity(w::CTASensor, E) = w.fit(E)
 
 function velocity(w::CTASensor, E;
                  T=caltemp(w), P=pressure(w),
@@ -83,14 +84,14 @@ function velocity(w::CTASensor, E;
         Tw = temperature(resistor(w))
     end
     g = gain(w)
-    (fc,ν) = correct(E/g, w.corr, T, P, fluid, Rw, Tw)
+    fc = correct(E/g, w.corr, T, P, fluid, Rw, Tw)
     
     ν_cal = kinvisc(w.corr)
-    Uc = w.fit(E*fc)
-    return ν / ν_cal * Uc
+    Uc = w.fit(E*fc.f)
+    return fc.nu / ν_cal * Uc
 end
 
-function velocity(w::CTASensor, E, fc::CorrFactor)
+function velocity(w::CTASensor, E::Real, fc::CorrFactor)
     ν_cal = kinvisc(w.corr)
     Uc = w.fit(E*fc.f)
     return fc.nu/ν_cal * Uc

@@ -59,6 +59,8 @@ function correct(w::CCASensor, E;
         
 end
 
+#velocity(w::CCASensor, E) = w.fit(E)
+    
 function velocity(w::CCASensor, E;
                   T=caltemp(w), P=pressure(w),
                   fluid=fluid(w), I=current(w))
@@ -81,3 +83,5 @@ function velocity(w::CCASensor, E, fc::CorrFactor)
 end
 
 (w::CCASensor)(args...; kw...) = velocity(w, args...; kw...)
+(w::CCASensor)(E::Real, fc::CorrFactor) = velocity(w, fc)
+#(w::CCASensor)(E::Real)  = velocity(w, E) 
