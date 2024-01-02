@@ -1,33 +1,40 @@
 # Testing probe3d stuff
 
 let
+    Ta = 273.15 + 20.0
+    Pa = 101325.0
+
+    AIRconst = ConstPropFluid(AIR, Ta, Pa)
 
     k² = [0.0, 0.0, 0.0]
     h² = [1.0, 1.0, 1.0]
 
-    T0 = 20.0+273.15
+    R = Resistor(R=3.5, a=0.4e-2, T=Ta)
     E = collect(1.0:20.0)
-    trivialcal = CalibrCurve(E, E, x->x, T0)
-    wire1 = Wire(3.5, 3.5*1.8, T0)
-    wire2 = Wire(3.7, 3.7*1.8, T0)
-    wire3 = Wire(3.6, 3.6*1.8, T0)
+    Tw = 273.15 + 240.0
+    Rw = R(Tw)
+
+    corr = TempCorrect(Ta, Pa, AIRconst, Rw, Tw)
+
+    wire1 = CTASensor(R, Rw, Tw, 1.0, corr, E->E)
+    wire2 = CTASensor(R, Rw, Tw, 1.0, corr, E->E)
+    wire3 = CTASensor(R, Rw, Tw, 1.0, corr, E->E)
     wires = (wire1, wire2, wire3)
 
-    cal = (trivialcal, trivialcal, trivialcal)
-    
-    probe = Probe3d(wires, cal, k², h²)
+    probe = Probe3d(wires, k², h²)
+    ν = kinvisc(corr)
+    fc = CorrFactor((1.0, 1.0, 1.0), (ν, ν, ν))
 
-    Ux, Uy, Uz = probe(1.0, 1.0, 1.0, T0)
+    Ux, Uy, Uz = probe(1.0, 1.0, 1.0, fc)
     @test Ux ≈ 1.0
     @test Uy ≈ 0.0 atol=1e-5
     @test Uz ≈ 0.0 atol=1e-5
     
-
     k² = [0.03, 0.04, 0.05]
     h² = [1.05, 1.08, 1.02]
-    probe = Probe3d(wires, cal, k², h²)
+    probe = Probe3d(wires, k², h²)
 
-    Ux, Uy, Uz = probe(1.0, 1.0, 1.0, T0)
+    Ux, Uy, Uz = probe(1.0, 1.0, 1.0, fc)
     @test Ux ≈ 1.0
     @test Uy ≈ 0.0 atol=1e-5
     @test Uz ≈ 0.0 atol=1e-5
@@ -35,7 +42,7 @@ let
     # Let's test directional calibration
     k² = [0.03, 0.04, 0.05]
     h² = [1.05, 1.08, 1.02]
-    probe = Probe3d(wires, cal, k², h²)
+    probe = Probe3d(wires, k², h²)
 
     
     θ = 30.0
@@ -66,7 +73,7 @@ let
     Uc3 = sqrt.( Ue3² ./ c[3] )
     
                 
-    vel1 = probe.(Uc1, Uc2, Uc3, T0)
+    vel1 = probe.(Uc1, Uc2, Uc3, fc)
     Ux1 = [v[1] for v in vel1]
     Uy1 = [v[2] for v in vel1]
     Uz1 = [v[3] for v in vel1]
@@ -74,10 +81,10 @@ let
     @test Ux1 ≈ Ux
     @test Uy1 ≈ Uy
     @test Uz1 ≈ Uz
-    
+
     k₁², h₁² = dircalibr(probe, Uc, Uc1, Uc2, Uc3, ϕ, θ)
 
     @test k₁² ≈ k²
     @test h₁² ≈ h²
-
+    
 end

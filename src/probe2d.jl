@@ -22,9 +22,8 @@ end
 
 function velocity(w::Probe2d, E1::Real, E2::Real, fc::CorrFactor)
     
-    
-    Uc1 = sensor(w,1).fit(E1*fc.f[1])
-    Uc2 = sensor(w,2).fit(E2*fc.f[2])
+    Uc1 = sensor(w,1).fit(E1*fc.f[1]) * fc.nu[1] / kinvisc(sensor(w,1))
+    Uc2 = sensor(w,2).fit(E2*fc.f[2]) * fc.nu[2] / kinvisc(sensor(w,2))
     
 
     k₁², k₂² = w.k²
@@ -37,9 +36,7 @@ function velocity(w::Probe2d, E1::Real, E2::Real, fc::CorrFactor)
     Ux = 1/sqrt(2) * (U₁ + U₂)
     Uy = 1/sqrt(2) * (U₁ - U₂)
 
-    ν_cal = kinvisc(sensor(w,1))
-    fre = fc.nu[1] / ν_cal
-    return Ux*fre, Uy*fre
+    return Ux, Uy
 end
 
 function velocity(w::Probe2d, E1::Real, E2::Real; kw...)
@@ -71,7 +68,7 @@ Perform directional calibration of a 2d probe (X wire).
 
 Coefficients `k₁²` and `k₂²` as a tuple.
 """
-function dircalibr(ang, Uc, Uc1, Uc2)
+function dircalibr(w::Probe2d, ang, Uc, Uc1, Uc2)
     
     A = @. (cosd(ang) + sind(ang))^2
     B = @. (cosd(ang) - sind(ang))^2

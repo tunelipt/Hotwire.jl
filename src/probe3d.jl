@@ -1,8 +1,6 @@
-mutable struct Probe3d{Anem<:AbstractThermalAnemometer,Calibr,Setup} <: AbstractProbe3d
+mutable struct Probe3d{Anems,Setup} <: AbstractProbe3d
     "Sensor information"
-    sensor::NTuple{3,Anem}
-    "Sensor calibration"
-    cal::NTuple{3,Calibr}
+    sensor::Anems
     "k² directional calibration coefficient"
     k²::Vector{Float64}
     "h² directional calibration coefficient"
@@ -20,6 +18,9 @@ mutable struct Probe3d{Anem<:AbstractThermalAnemometer,Calibr,Setup} <: Abstract
     "Anemometer setup"
     setup::Setup
 end
+
+sensor(w::Probe3d) = w.sensor
+sensor(w::Probe3d, i::Integer) = w.sensor[i]
 
 const cosϕ_dantec =  [-sqrt(1/3)  1/sqrt(2)   -sqrt(1-1/3-1/2);
                       -sqrt(1/3)  -1/sqrt(2)  -sqrt(1-1/3-1/2);
@@ -46,7 +47,6 @@ The function assumes that the calibration was carried along axis `idircal`.
 ### Arguments:
 
  - `sensor`: a tuple of `AbstractThermalAnemometer` objects (3)
- - `cal`: Tuple of `CalibrCurve` objects, one calibration for each sensor
  - `k²`: directional calibration coefficient k² for each wire. See [`dircalibr`](@ref).
  - `h²`: directional calibration coefficient k² for each wire. See [`dircalibr`](@ref).
  - `setup`: hardware/system  configuration
@@ -61,7 +61,7 @@ For Dantex triaxial probes, wires 1 and make an angle of 45° with axis y, wire
 3 is in plane xz and cos²θ = 1/3 where θ is the angle that the wires 1 - 3 make
 with coordinate axis x.
 """
-function Probe3d(sensor, cal, k², h², setup=""; ih=[3,1,2], idircal=1,
+function Probe3d(sensor, k², h², setup=""; ih=[3,1,2], idircal=1,
                  cosang=cosϕ_dantec)
     K = ones(3,3)
     for i in 1:3
@@ -74,38 +74,51 @@ function Probe3d(sensor, cal, k², h², setup=""; ih=[3,1,2], idircal=1,
             (1.0 + k²[2] + h²[2])*cosϕ[2,idircal]^2,
             (1.0 + k²[3] + h²[3])*cosϕ[3,idircal]^2 ]
     
-    return Probe3d((sensor[1], sensor[2], sensor[3]),
-                   (cal[1], cal[2], cal[3]), k², h², ih, cosϕ, 
+    return Probe3d(sensor, k², h², ih, cosϕ, 
                    c2e, inv(K), idircal, setup)
 end
 
 reftemp(anem::Probe3d) = reftemp(anem.sensor[1])
 
-function velocity(anem::Probe3d, E₁, E₂, E₃, T)
+function correct(w::Probe3d, E1::Real, E2::Real, E3::Real; kw)
+    fc1 = correct(sensor(w,1), E1, kw...)
+    fc2 = correct(sensor(w,2), E2, kw...)
+    fc3 = correct(sensor(w,3), E3, kw...)
+    return CorrFactor((fc1.f, fc2.f, fc3.f), (fc1.nu, fc2.nu, fc3.nu))
+end
+
+function velocity(w::Probe3d, E₁::Real, E₂::Real, E₃::Real, fc::CorrFactor)
 
     # Calibration curve and temperature correction for
     # each sensor and calculation of effective velocity for each wire
-    Uc1 = anem.cal[1](anem.sensor[1], E₁, T)
-    Uc2 = anem.cal[2](anem.sensor[2], E₂, T)
-    Uc3 = anem.cal[3](anem.sensor[3], E₃, T)
-    Uᵉ = [Uc1^2 * anem.c2e[1], 
-          Uc2^2 * anem.c2e[2], 
-          Uc3^2 * anem.c2e[3]]
+    Uc1 = sensor(w,1).fit(E₁*fc.f[1]) * fc.nu[1] / kinvisc(sensor(w,1))
+    Uc2 = sensor(w,2).fit(E₂*fc.f[2]) * fc.nu[2] / kinvisc(sensor(w,2))
+    Uc3 = sensor(w,3).fit(E₃*fc.f[3]) * fc.nu[3] / kinvisc(sensor(w,3))
+    
+    Uᵉ = [Uc1^2 * w.c2e[1], 
+          Uc2^2 * w.c2e[2], 
+          Uc3^2 * w.c2e[3]]
     
     # Calculate speed in wire coordinates
-    Uʷ = anem.A * Uᵉ
+    Uʷ = w.A * Uᵉ
     
     U1 = sqrt(abs(Uʷ[1]))
     U2 = sqrt(abs(Uʷ[2]))
     U3 = sqrt(abs(Uʷ[3]))
     
-    return (-U1*anem.cosϕ[1,1] - U2*anem.cosϕ[2,1] - U3*anem.cosϕ[3,1],
-            -U1*anem.cosϕ[1,2] - U2*anem.cosϕ[2,2] - U3*anem.cosϕ[3,2],
-            -U1*anem.cosϕ[1,3] - U2*anem.cosϕ[2,3] - U3*anem.cosϕ[3,3])
+    return (-U1*w.cosϕ[1,1] - U2*w.cosϕ[2,1] - U3*w.cosϕ[3,1],
+            -U1*w.cosϕ[1,2] - U2*w.cosϕ[2,2] - U3*w.cosϕ[3,2],
+            -U1*w.cosϕ[1,3] - U2*w.cosϕ[2,3] - U3*w.cosϕ[3,3])
 end
 
-(anem::Probe3d)(E₁, E₂, E₃, T) = velocity(anem, E₁, E₂, E₃, T)
-(anem::Probe3d)(E₁, E₂, E₃) = velocity(anem, E₁, E₂, E₃, reftemp(anem.sensor[1]))
+velocity(w::Probe3d, E1::Real, E2::Real, E3::Real; kw...) =
+    velocity(w, E1, E2, E3, correct(w, E1, E2, E3; kw...))
+
+(w::Probe3d)(E₁::Real, E₂::Real, E₃::Real; kw...) =
+    velocity(w, E₁, E₂, E₃; kw...)
+
+(w::Probe3d)(E₁::Real, E₂::Real, E₃::Real, fc::CorrFactor) =
+    velocity(w, E₁, E₂, E₃, fc)
 
 
 """

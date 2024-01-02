@@ -12,7 +12,7 @@ let
     Rw = R(Tw)
 
     corr = TempCorrect(Ta, Pa, AIRconst, Rw, Tw)
-    ν = 
+    
     wire1 = CTASensor(R, Rw, Tw, 1.0, corr, E->E)
     wire2 = CTASensor(R, Rw, Tw, 1.0, corr, E->E)
     
@@ -117,6 +117,7 @@ let
     @test Uy ≈ Uy0 
     
     k1 = 0.03; k2 = 0.05
+    probe = Probe2d((wire1, wire2), (k1, k2), "")
 
     ang = -40.0:5.0:40.0
     Uc = 10.0
@@ -129,7 +130,7 @@ let
     Uc1 = @. sqrt( 2*Ue1^2 / (1 + k1))
     Uc2 = @. sqrt( 2*Ue2^2 / (1 + k2))
 
-    k1b, k2b = dircalibr(ang, Uc, Uc1, Uc2)
+    k1b, k2b = dircalibr(probe, ang, Uc, Uc1, Uc2)
 
     @test k1b ≈ k1
     @test k2b ≈ k2
