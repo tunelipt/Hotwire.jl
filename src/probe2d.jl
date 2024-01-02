@@ -1,24 +1,33 @@
 
 
-mutable struct Probe2d{Anem<:AbstractThermalAnemometer,Calibr,Setup} <: AbstractProbe2d
+mutable struct Probe2d{Anems,Setup} <: AbstractProbe2d
     "Sensor information"
-    sensor::NTuple{2,Anem}
-    "Sensor calibration"
-    cal::NTuple{2,Calibr}
+    sensor::Anems
     "k² directional calibration for each sensor"
     k²::NTuple{2,Float64}
     "Anemometer setup"
     setup::Setup
 end
 
+sensor(w::Probe2d) = w.sensor
+sensor(w::Probe2d, i::Integer) = w.sensor[i]
+
 reftemp(anem::Probe2d) = reftemp(anem.sensor[1])
 
-function velocity(anem::Probe2d, E1, E2, T=reftemp(anem.sensor[1]))
+function correct(w::Probe2d, E1::Real, E2::Real; kw...)
+    fc1 = correct(sensor(w,1), E1, kw...)
+    fc2 = correct(sensor(w,2), E2, kw...)
+    return CorrFactor((fc1.f, fc2.f), (fc1.nu, fc2.nu))
+end
 
-    Uc1 = anem.cal[1](anem.sensor[1], E1, T)  # Calibration velocity of wire 1
-    Uc2 = anem.cal[2](anem.sensor[2], E2, T)  # Calibration velocity of wire 1
+function velocity(w::Probe2d, E1::Real, E2::Real, fc::CorrFactor)
+    
+    
+    Uc1 = sensor(w,1).fit(E1*fc.f[1])
+    Uc2 = sensor(w,2).fit(E2*fc.f[2])
+    
 
-    k₁², k₂² = anem.k²
+    k₁², k₂² = w.k²
 
     a = 1 / (2*(1 - k₁²*k₂²))
     
@@ -28,16 +37,25 @@ function velocity(anem::Probe2d, E1, E2, T=reftemp(anem.sensor[1]))
     Ux = 1/sqrt(2) * (U₁ + U₂)
     Uy = 1/sqrt(2) * (U₁ - U₂)
 
-    return Ux, Uy
+    ν_cal = kinvisc(sensor(w,1))
+    fre = fc.nu[1] / ν_cal
+    return Ux*fre, Uy*fre
 end
 
-(anem::Probe2d)(E1, E2, T) = velocity(anem, E1, E2, T)
-(anem::Probe2d)(E1, E2) = velocity(anem, E1, E2, reftemp(anem.sensor[1]))
+function velocity(w::Probe2d, E1::Real, E2::Real; kw...)
+    fc = correct(w, E1, E2; kw...)
+    return velocity(w, E1, E2, fc)
+end
+
+(w::Probe2d)(E1::Real, E2::Real, fc::CorrFactor) = velocity(w, E1, E2, fc)
+(w::Probe2d)(E1::Real, E2::Real; kw...) = velocity(w, E1, E2; kw...)
+
+
 
 import LinearAlgebra: dot
 
 """
-`dircalibr(anem::Probe2d, ang, Uc, Uc1, Uc2)`
+`dircalibr(ang, Uc, Uc1, Uc2)`
 
 Perform directional calibration of a 2d probe (X wire).
 
@@ -53,7 +71,7 @@ Perform directional calibration of a 2d probe (X wire).
 
 Coefficients `k₁²` and `k₂²` as a tuple.
 """
-function dircalibr(anem::Probe2d, ang, Uc, Uc1, Uc2)
+function dircalibr(ang, Uc, Uc1, Uc2)
     
     A = @. (cosd(ang) + sind(ang))^2
     B = @. (cosd(ang) - sind(ang))^2

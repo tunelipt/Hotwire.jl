@@ -57,7 +57,7 @@ gain(w::AbstractCTA) = w.gain
 fluid(w::CTASensor) = fluid(w.corr)
 pressure(w::CTASensor) = pressure(w.corr)
 caltemp(w::CTASensor) = reftemp(w.corr)
-
+kinvisc(w::CTASensor) = kinvisc(w.corr)
    
 function correct(w::CTASensor, E;
                  T=caltemp(w), P=pressure(w),
