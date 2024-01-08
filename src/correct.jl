@@ -27,6 +27,17 @@ kinvisc(f::CorrFactor) = f.nu
 corrfactor(f::CorrFactor) = f.f
 voltage(f::CorrFactor) = f.E
 
+function (fc::CorrFactor)(Eo, gain, offset)
+    Ew = Eo/gain + offset
+    return (Ew*fc.f - offset)*gain
+end
+
+function (fc::CorrFactor)(Eo, gain, offset, idx::Integer)
+    Ew = Eo/gain[i] + offset[i]
+    return (Ew*fc.f[i] - offset[i])*gain[i]
+end
+
+
 struct TempCorrect{U,Fluid} <: AbstractAnemCorrect
     "Fluid temperature"
     T::U

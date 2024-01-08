@@ -55,12 +55,19 @@ current(w::Probe1d{<:AbstractCCA}) = current(w.sensor)
 # Now let's actually do something with `Probe1d`
 
 correct(w::Probe1d, E::Real; kw...) = correct(sensor(w), args...; kw...)
-velocity(w::Probe1d, E::Real; kw...) = velocity(sensor(w), E; kw...)
-velocity(w::Probe1d, E::Real, fc::CorrFactor) =
+
+
+velocity(w::Probe1d, E; kw...) = velocity(sensor(w), E; kw...)
+velocity(w::Probe1d, E, fc::CorrFactor) =
     velocity(sensor(w), E, fc)
 
-(w::Probe1d)(E::Real; kw...) = velocity(sensor(w), E; kw...)
+velocity!(U::AbstractVector, w::Probe1d, E::AbstractVector; kw...) =
+    velocity(U, w, E; kw...)
+velocity!(U::AbstractVector, w::Probe1d, E::AbstractVector, fc::CorrFactor) =
+    velocity(U, w, E, fc)
 
-(w::Probe1d)(E::Real, fc::CorrFactor) =
+(w::Probe1d)(E; kw...) = velocity(sensor(w), E; kw...)
+(w::Probe1d)(E, fc::CorrFactor) =
     velocity(sensor(w), E, fc)
+
 

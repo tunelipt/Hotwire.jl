@@ -81,21 +81,17 @@ end
 
 #velocity(w::CTASensor, E) = w.fit(E)
 
-function velocity(w::CTASensor, E;
+function velocity(w::CTASensor, E::Real;
                  T=caltemp(w), P=pressure(w),
                   fluid=fluid(w), Rw=resistance(w))
     fc = correct(w, E; T=T, P=P, fluid=fluid, Rw=Rw)
-    ν_cal = kinvisc(w.corr)
-    Ec = (E*fc.f - w.offset) * w.gain
-    Uc = w.fit(Ec)
-    return (fc.nu / ν_cal) * Uc
+    return velocity(w, E, fc)
 end
 
 function velocity(w::CTASensor, E::Real, fc::CorrFactor)
-    ν_cal = kinvisc(w.corr)
-    E1 = E/w.gain + w.offset
-    Uc = w.fit( (E1*fc.f - w.offset) * w.gain )
-    return (fc.nu/ν_cal) * Uc
+    Ec = fc(E, gain(w), offset(w))
+    Uc = w.fit(Ec)
+    return (fc.nu / kinvisc(w.corr)) * Uc
 end
 
 function velocity!(U::AbstractVector, w::CTASensor, E::AbstractVector, fc::CorrFactor)
@@ -107,14 +103,31 @@ function velocity!(U::AbstractVector, w::CTASensor, E::AbstractVector, fc::CorrF
     rν = fc.nu/kinvisc(w.corr)
     
     for (i,e) in enumerate(E)
-        e1 = (e/g + o).fc
-        
+        ec = fc(e, g, o)
+        uc = w.fit(ec)
+        U[i] = rν * uc
     end
-    
-    
+    return U
+end
+velocity(w::CTASensor, E::AbstractVector, fc::CorrFactor) =
+    velocity(zeros(length(E)), w, W, fc)
+
+function velocity!(U::AbstractVector, w::CTASensor, E::AbstractVector;
+                   T=caltemp(w), P=pressure(w),
+                   fluid=fluid(w), Rw=resistance(w))
+    fc = correct(w, E; T=T, P=P, fluid=fluid, Rw=Rw)
+    return velocity!(U, w, E, fc)
 end
 
-(w::CTASensor)(E::Real; kw...) = velocity(w, E; kw...)
-(w::CTASensor)(E::Real, fc::CorrFactor) = velocity(w, E, fc)
+function velocity!(w::CTASensor, E::AbstractVector;
+                   T=caltemp(w), P=pressure(w),
+                   fluid=fluid(w), Rw=resistance(w))
+    fc = correct(w, E; T=T, P=P, fluid=fluid, Rw=Rw)
+    return velocity!(zeros(length(E)), w, E, fc)
+end
+
+
+(w::CTASensor)(E; kw...) = velocity(w, E; kw...)
+(w::CTASensor)(E, fc::CorrFactor) = velocity(w, E, fc)
 
 

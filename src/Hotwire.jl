@@ -11,7 +11,7 @@ export AIR, HELIUM, NITROGEN, C3H8, OXYGEN, IdealGas
 
 export AbstractAnemCorrect, TempCorrect, WireCorrect, GlassbeadCorrect
 export mf58correct, correct, tempcorrect
-export CorrFactor, corrfactor, voltage
+export CorrFactor, corrfactor, voltage, ivoltage
 
 export CalibrCurve, correctmodel, correction, pressure
 
