@@ -23,7 +23,7 @@ export make_king_fitfun, make_kingpoly_fitfun, make_poly_fitfun
 
 export sensor
 export AbstractProbe, AbstractProbe1d, AbstractProbe2d, AbstractProbe3d
-export HWCable, HWSupport, HWBridge
+export HWCable, HWSupport, HWBridge, impedance
 export Probe1d, Probe2d, Probe3d
 export velocity, velocity!
 export dircalibr
@@ -50,5 +50,6 @@ include("probes.jl")
 include("probe2d.jl")
 include("probe3d.jl")
 #include("hardware.jl")
+#include("dantec.jl")
 
 end # module

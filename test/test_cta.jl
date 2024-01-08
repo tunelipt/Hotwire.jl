@@ -32,7 +32,7 @@ let D=5e-6, L=2e-3
 
     corr = TempCorrect(Ta, Pa, AIRconst, Rw, Tw)
     
-    w =  CTASensor(R, Rw, Tw, 1.0, corr, fit)
+    w =  CTASensor(R, Rw, Tw, 1.0, 0.0, corr, fit)
 
     @test temperature(w) == Tw
     @test resistance(w) == Rw
@@ -101,7 +101,7 @@ let
 
     corr = mf58correct(Ta, Pa, AIRconst, Rw, Tw)    
     
-    w =  CTASensor(R, Rw, Tw, 1.0, corr, fit)
+    w =  CTASensor(R, Rw, Tw, 1.0, 0.0, corr, fit)
 
     @test temperature(w) == Tw
     @test resistance(w) == Rw

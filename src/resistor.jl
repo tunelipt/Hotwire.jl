@@ -141,6 +141,9 @@ resistance(r::AbstractResistor) = r.R₀
 resistance(r::Resistor, T) = r.R₀ * (1 + r.α * (T - r.T₀))
 resistance(th::Thermistor, T) = th.R₀ * exp( -th.B * (1/th.T₀ - 1/T ) )
 
+resistance(r::Real) = r
+resistance(r::Real, T) = r
+
 """
     `reftemp(R)`
 

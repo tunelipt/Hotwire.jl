@@ -1,16 +1,41 @@
-struct HWSupport
+
+abstract type AbstractHardware end
+
+hardmodel(h::AbstractHardware) = h.model
+hardtag(h::AbstractHardware) = h.tag
+
+struct HWCable{U,V,W} <: AbstractHardware
+    "Model/serial/etc of the cable"
+    model::String
+    "Tag"
+    tag::String
+    "Resistance of the cable"
+    R::U
+    "Impedance of the cable"
+    impedance::V
+    "Length of the cable"
+    L::W
+end
+
+HWCable(R,impedance; model="", tag="") = HWCable(code, tag, R, impedance)
+
+
+impedance(c::HWCable) = c.impedance
+
+resistance(c::HWCable) = resistance(c.R)
+resistance(c::HWCable, T) = resistance(c.R, T)
+
+
+
+
+
+struct HWSupport{U} <: AbstractHardware
     "Support model"
     model::String
     "Support tag (storage and control)"
     tag::String
     "Nominal resistance of the support"
-    R::Float64
-    "Diameter of the support"
-    D::Float64
-    "Length of the support"
-    L::Float64
-    "Length of support cables"
-    Lc::Float64
+    R::U
 end
 
 """
@@ -20,66 +45,11 @@ Stores information about Probe support. Noty strictly necessary but
 could be useful for future reference
 
 """
-HWSupport(;model="", tag="", R=0.0, D=0.0, L=0.0, Lc=0.0) = HWSupport(model, tag, R, D, L, Lc)
+HWSupport(R ; model="", tag="") = HWSupport(model, tag, R)
 
-struct HWCable
-    "Cable model/type"
-    model::String
-    "Cable tag (storage and control)"
-    tag::String
-    "Nominal resistance of the cable"
-    R::Float64
-    "Length of the cable"
-    L::Float64
-    "Connector types (left and right)"
-    conn::Tuple{String,String}
-end
+resistance(c::HWSupport) = resistance(c.R)
+resistance(c::HWSupport, T) = resistance(c.R, T)
 
-"""
-    `HWCable(model="", tag="", R=0.2, L=4.0, ("BNC","BNC"))`
 
-Stores information about the cable used. Not strictly necessary but
-could be useful.
 
-"""
-HWCable(;model="A1863 - 50Ω impedance", tag="", R=0.2, L=4.0, conn=("BNC", "BNC")) = HWCable(model, tag, R, L, conn)
 
-struct HWBridge
-    "Anemometer system model"
-    model::String
-    "Anemometer tag"
-    tag::String
-    "Specific bridge id"
-    id::Int
-    "Output offset"
-    offset::Float64
-    "Output gain"
-    gain::Float64
-    "Output low pass filter"
-    lpfilt::Float64
-    "Bridge ration"
-    bridgeratio::String
-    "Bridge amplifier gain"
-    ampgain::Float64
-    "Bridge filter"
-    filter::Float64
-    "Cable compensation"
-    cablecomp::Int
-    "Cooling interval"
-    coolinterv::Float64
-end
-
-"""
-    `HWBridge(model="", tag="", id=1, offset=0, gain=1, lpfilt=1e3,
-              bridgeration="20:1", ampgain=8, filter=3, 
-              cablecomp=0, coolinterv=2)`
-
-Information about hotwire hardware system.
-
-"""
-HWBridge(;model="Streamline", tag="", id=1, offset=0.0, gain=1.0,
-         lpfilt=1e3, bridgeratio="20:1", ampgain=8, filter=3,
-         cablecomp=0, coolinterv=2.0) =
-             HWBridge(model, tag, id, offset, gain, lpfilt,
-                      bridgeratio, ampgain, filter, cablecomp,
-                      coolinterv)

@@ -16,9 +16,9 @@ let
 
     corr = TempCorrect(Ta, Pa, AIRconst, Rw, Tw)
 
-    wire1 = CTASensor(R, Rw, Tw, 1.0, corr, E->E)
-    wire2 = CTASensor(R, Rw, Tw, 1.0, corr, E->E)
-    wire3 = CTASensor(R, Rw, Tw, 1.0, corr, E->E)
+    wire1 = CTASensor(R, Rw, Tw, 1.0, 0.0, corr, E->E)
+    wire2 = CTASensor(R, Rw, Tw, 1.0, 0.0, corr, E->E)
+    wire3 = CTASensor(R, Rw, Tw, 1.0, 0.0, corr, E->E)
     wires = (wire1, wire2, wire3)
 
     probe = Probe3d(wires, k², h²)

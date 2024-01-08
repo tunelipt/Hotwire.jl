@@ -26,6 +26,8 @@ struct CTASensor{Correct,U,RT,Fit} <: AbstractCTA
     Tw::U
     "Voltage output gain"
     gain::U
+    "Voltage offset"
+    offset::U
     "Correction model"
     corr::Correct
     "Calibration curve"
@@ -68,7 +70,9 @@ function correct(w::CTASensor, E;
         Tw = temperature(resistor(w), Rw)
     end
     g = gain(w)
-    return correct(E/g, w.corr, T, P, fluid, Rw, Tw)
+    offset = w.offset
+    E1 = E/g + offset
+    return correct(E1, w.corr, T, P, fluid, Rw, Tw)
     
 end
 
@@ -78,25 +82,21 @@ end
 function velocity(w::CTASensor, E;
                  T=caltemp(w), P=pressure(w),
                  fluid=fluid(w), Rw=resistance(w))
-    if Rw == resistance(w)
-        Tw = temperature(w)
-    else
-        Tw = temperature(resistor(w))
-    end
-    g = gain(w)
-    fc = correct(E/g, w.corr, T, P, fluid, Rw, Tw)
-    
+    fc = correct(w, E; T=T, P=P, fluid=fluid, Rw=Rw)
     ν_cal = kinvisc(w.corr)
-    Uc = w.fit(E*fc.f)
-    return fc.nu / ν_cal * Uc
+    Ec = (E*fc.f - w.offset) * w.gain
+    Uc = w.fit(Ec)
+    return (fc.nu / ν_cal) * Uc
 end
 
 function velocity(w::CTASensor, E::Real, fc::CorrFactor)
     ν_cal = kinvisc(w.corr)
-    Uc = w.fit(E*fc.f)
-    return fc.nu/ν_cal * Uc
+    E1 = E/w.gain + w.offset
+    Uc = w.fit( (E1*fc.f - w.offset) * w.gain )
+    return (fc.nu/ν_cal) * Uc
 end
 
 (w::CTASensor)(E::Real; kw...) = velocity(w, E; kw...)
 (w::CTASensor)(E::Real, fc::CorrFactor) = velocity(w, E, fc)
-                                           
+
+
