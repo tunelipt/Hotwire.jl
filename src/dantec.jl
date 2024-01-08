@@ -118,5 +118,62 @@ function dantec1d(hconfig, calibr, fitfun; model="", tag="", alpha=0.4e-2, fluid
 
     sensor = CTASensor(R, Rw, Tw, g, o, corr, fit)
     
-    return Probe1d(sensor, (probe, support, cable, bridge))
+    return Probe1d(sensor, (hconfig, calibr, probe, support, cable, bridge))
+end
+
+
+function dantec2d(hconfig, calibr, fitfun, k²;
+                  model="", tag="", alpha=0.4e-2, fluid=AIR,
+                  T0=nothing, br=1/20, probe=nothing, support=nothing, cable=nothing,
+                  n=1/3)
+    
+    bridge = [StreamlineBridge(hconfig[i,:], model=model, tag=tag, T0=T0, br=br)
+              for i in 1:2]
+    
+    T0 = [b.T0 for b in bridge] .+ 273.15
+    Rdecade   = [b.Rdecade for b in bridge]
+    Rprobe    = [b.Rprobe for b in bridge]
+    R0        = [b.R0 for b in bridge]
+    
+
+    ΔR =  (Rdecade * br  - Rprobe)
+    Rw = R0 + ΔR
+
+
+    R = [Resistor(R=R0[i], a=alpha, T=T0[i]) for i in eachindex(bridge)]
+    Tw = temperature.(R, Rw)
+
+    Tcal = calibr[:,4] .+ 273.15  # Calibration temperature (K)
+    Pcal = calibr[:,5] .* 1000    # Calibration pressure (Pa)
+    E1    = calibr[:,2]
+    E2    = calibr[:,3]
+    Uc   = calibr[:,1]
+
+    
+    Tm = mean(Tcal)
+    Pm = mean(Pcal)
+
+    g = [b.gain for b in bridge]
+    o = [b.offset for b in bridge]
+    
+    corr = WireCorrect(Tm, Pm, fluid, Rw, Rw, n)
+
+    Ei1 = [(e/g[1] + o[1]) for e in E1]
+    Ei2 = [(e/g[2] + o[2]) for e in E2]
+
+    fc1 = [correct(e, corr, Tm, Pm, fluid, Rw, Tw) for e in Ei1]
+    fc2 = [correct(e, corr, Tm, Pm, fluid, Rw, Tw) for e in Ei2]
+
+    Ec1 = [(f.E - o)*g for f in fc1]
+    Ec2 = [(f.E - o)*g for f in fc2]
+
+    fit1 = fitfun(Ec1, Uc)
+    fit2 = fitfun(Ec2, Uc)
+
+    
+    sensor1 = CTASensor(R[1], Rw[1], Tw[1], g[1], o[1], corr, fit1)
+    sensor2 = CTASensor(R[2], Rw[2], Tw[2], g[2], o[2], corr, fit2)
+
+    return
+    
 end
