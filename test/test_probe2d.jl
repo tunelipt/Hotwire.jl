@@ -22,7 +22,7 @@ let
     Ux0 = 2.0; Uy0 = 0.0
     Uc1 = (Ux0 - Uy0)
     Uc2 = (Ux0 + Uy0)
-    fc = CorrFactor((1.0, 1.0), (kinvisc(corr), kinvisc(corr)))
+    fc = CorrFactor((1.0, 1.0), (kinvisc(corr), kinvisc(corr)), (1.0, 1.0))
 
     # E1 = Uc1, E2 = Uc2 - simplifiying...
     Ux, Uy = velocity(probe, Uc1, Uc2, fc)

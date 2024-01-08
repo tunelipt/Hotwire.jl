@@ -42,7 +42,7 @@ let D=5e-6, L=2e-3
     
     ν_cal = kinvisc(corr)
 
-    fc = CorrFactor(1.0, ν_cal)
+    fc = CorrFactor(1.0, ν_cal, E)
     U1 = w.(E, fc)
 
     @test all(U1 .≈ U)
@@ -111,7 +111,7 @@ let
     
     ν_cal = kinvisc(corr)
 
-    fc = CorrFactor(1.0, ν_cal)
+    fc = CorrFactor(1.0, ν_cal, E)
     U1 = w.(E, fc)
 
     @test all(U1 .≈ U)

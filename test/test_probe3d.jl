@@ -23,7 +23,7 @@ let
 
     probe = Probe3d(wires, k², h²)
     ν = kinvisc(corr)
-    fc = CorrFactor((1.0, 1.0, 1.0), (ν, ν, ν))
+    fc = CorrFactor((1.0, 1.0, 1.0), (ν, ν, ν), (1.0, 1.0, 1.0))
 
     Ux, Uy, Uz = probe(1.0, 1.0, 1.0, fc)
     @test Ux ≈ 1.0

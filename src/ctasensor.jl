@@ -56,6 +56,8 @@ overtemp(w::AbstractCTA,T) = temperature(w) - T
 overtemp(w::AbstractCTA) = temperature(w) - reftemp(w) 
 
 gain(w::AbstractCTA) = w.gain
+offset(w::AbstractCTA) = w.offset
+
 fluid(w::CTASensor) = fluid(w.corr)
 pressure(w::CTASensor) = pressure(w.corr)
 caltemp(w::CTASensor) = reftemp(w.corr)
@@ -81,7 +83,7 @@ end
 
 function velocity(w::CTASensor, E;
                  T=caltemp(w), P=pressure(w),
-                 fluid=fluid(w), Rw=resistance(w))
+                  fluid=fluid(w), Rw=resistance(w))
     fc = correct(w, E; T=T, P=P, fluid=fluid, Rw=Rw)
     ν_cal = kinvisc(w.corr)
     Ec = (E*fc.f - w.offset) * w.gain
@@ -94,6 +96,22 @@ function velocity(w::CTASensor, E::Real, fc::CorrFactor)
     E1 = E/w.gain + w.offset
     Uc = w.fit( (E1*fc.f - w.offset) * w.gain )
     return (fc.nu/ν_cal) * Uc
+end
+
+function velocity!(U::AbstractVector, w::CTASensor, E::AbstractVector, fc::CorrFactor)
+    @assert length(U) == length(E)
+    
+    g = gain(w)
+    o = offset(w)
+
+    rν = fc.nu/kinvisc(w.corr)
+    
+    for (i,e) in enumerate(E)
+        e1 = (e/g + o).fc
+        
+    end
+    
+    
 end
 
 (w::CTASensor)(E::Real; kw...) = velocity(w, E; kw...)
