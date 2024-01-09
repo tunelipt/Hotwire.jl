@@ -33,7 +33,7 @@ function (fc::CorrFactor)(Eo, gain, offset)
 end
 
 function (fc::CorrFactor)(Eo, gain, offset, idx::Integer)
-    Ew = Eo/gain[i] + offset[i]
+    Ew = Eo/gain + offset
     return (Ew*fc.f[i] - offset[i])*gain[i]
 end
 

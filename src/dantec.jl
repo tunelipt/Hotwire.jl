@@ -130,7 +130,7 @@ function dantec2d(hconfig, calibr, fitfun, k²;
     bridge = [StreamlineBridge(hconfig[i,:], model=model, tag=tag, T0=T0, br=br)
               for i in 1:2]
     
-    T0 = [b.T0 for b in bridge] .+ 273.15
+    T0 = [b.Tr for b in bridge] .+ 273.15
     Rdecade   = [b.Rdecade for b in bridge]
     Rprobe    = [b.Rprobe for b in bridge]
     R0        = [b.R0 for b in bridge]
@@ -147,7 +147,7 @@ function dantec2d(hconfig, calibr, fitfun, k²;
     Pcal = calibr[:,5] .* 1000    # Calibration pressure (Pa)
     E1    = calibr[:,2]
     E2    = calibr[:,3]
-    Uc   = calibr[:,1]
+    Uc    = calibr[:,1]
 
     
     Tm = mean(Tcal)
@@ -174,6 +174,7 @@ function dantec2d(hconfig, calibr, fitfun, k²;
     sensor1 = CTASensor(R[1], Rw[1], Tw[1], g[1], o[1], corr, fit1)
     sensor2 = CTASensor(R[2], Rw[2], Tw[2], g[2], o[2], corr, fit2)
 
-    return
+    return Probe2d((sensor1, sensor2), (k²[1], k²[2]),
+                   (hconfig, calibr, probe, support, cable, bridge))
     
 end

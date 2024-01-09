@@ -56,15 +56,17 @@ current(w::Probe1d{<:AbstractCCA}) = current(w.sensor)
 
 correct(w::Probe1d, E::Real; kw...) = correct(sensor(w), args...; kw...)
 
+velf(w::Probe1d, E) = velf(sensor(w),E)
+velf!(U::AbstractVector, w::Probe1d, E::AbstractVector) = U .= velf.(w, E)
 
 velocity(w::Probe1d, E; kw...) = velocity(sensor(w), E; kw...)
 velocity(w::Probe1d, E, fc::CorrFactor) =
     velocity(sensor(w), E, fc)
 
 velocity!(U::AbstractVector, w::Probe1d, E::AbstractVector; kw...) =
-    velocity(U, w, E; kw...)
+    velocity(U, sensor(w), E; kw...)
 velocity!(U::AbstractVector, w::Probe1d, E::AbstractVector, fc::CorrFactor) =
-    velocity(U, w, E, fc)
+    velocity(U, sensor(w), E, fc)
 
 (w::Probe1d)(E; kw...) = velocity(sensor(w), E; kw...)
 (w::Probe1d)(E, fc::CorrFactor) =
