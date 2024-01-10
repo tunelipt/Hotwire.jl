@@ -87,13 +87,14 @@ function correct(w::Probe3d, E1::Real, E2::Real, E3::Real; kw)
     return CorrFactor((fc1.f, fc2.f, fc3.f), (fc1.nu, fc2.nu, fc3.nu))
 end
 
-function velocity(w::Probe3d, E₁::Real, E₂::Real, E₃::Real, fc::CorrFactor)
+function vel_aux(w::Probe3d, Uc1, Uc2, Uc3)
+#function velocity(w::Probe3d, E₁::Real, E₂::Real, E₃::Real, fc::CorrFactor)
 
     # Calibration curve and temperature correction for
     # each sensor and calculation of effective velocity for each wire
-    Uc1 = sensor(w,1).fit(E₁*fc.f[1]) * fc.nu[1] / kinvisc(sensor(w,1))
-    Uc2 = sensor(w,2).fit(E₂*fc.f[2]) * fc.nu[2] / kinvisc(sensor(w,2))
-    Uc3 = sensor(w,3).fit(E₃*fc.f[3]) * fc.nu[3] / kinvisc(sensor(w,3))
+    #Uc1 = sensor(w,1).fit(E₁*fc.f[1]) * fc.nu[1] / kinvisc(sensor(w,1))
+    #Uc2 = sensor(w,2).fit(E₂*fc.f[2]) * fc.nu[2] / kinvisc(sensor(w,2))
+    #Uc3 = sensor(w,3).fit(E₃*fc.f[3]) * fc.nu[3] / kinvisc(sensor(w,3))
     
     Uᵉ = [Uc1^2 * w.c2e[1], 
           Uc2^2 * w.c2e[2], 
@@ -111,8 +112,33 @@ function velocity(w::Probe3d, E₁::Real, E₂::Real, E₃::Real, fc::CorrFactor
             -U1*w.cosϕ[1,3] - U2*w.cosϕ[2,3] - U3*w.cosϕ[3,3])
 end
 
+function velf(w::Probe3d, E1::Real, E2::Real, E3::Real)
+    Uc1 = velf(sensor(w,1),E1)
+    Uc2 = velf(sensor(w,2),E2)
+    Uc3 = velf(sensor(w,2),E3)
+    return vel_aux(w, Uc1, Uc2, Uc3)
+    
+end
+
+function velocity(w::Probe3d, E1::Real, E2::Real, E3::Real, fc::CorrFactor)
+    w1 = sensor(w,1); w2 = sensor(w,2); w3 = sensor(w,3)
+    E1c = outvolt(w1, sensorvolt(w1, E1)*fc.f[1])
+    E2c = outvolt(w2, sensorvolt(w2, E2)*fc.f[2])
+    E3c = outvolt(w3, sensorvolt(w3, E3)*fc.f[3])
+    
+    rnu = fc.nu[1]/kinvisc(w1) # We will assume the others are the same...
+    Ux, Uy, Uz = velf(w, E1c, E2c, E3c)
+    return Ux * rnu, Uy*rnu, Uz*rnu
+end
+
 velocity(w::Probe3d, E1::Real, E2::Real, E3::Real; kw...) =
     velocity(w, E1, E2, E3, correct(w, E1, E2, E3; kw...))
+
+velocity(w::Probe3d, E::NTuple, fc::CorrFactor) =
+    velocity(w, E[1], E[2], E[3], fc)
+
+velocity(w::Probe3d, E::NTuple; kw...) =
+    velocity(w, E[1], E[2], E[3]; kw...)
 
 (w::Probe3d)(E₁::Real, E₂::Real, E₃::Real; kw...) =
     velocity(w, E₁, E₂, E₃; kw...)
@@ -120,6 +146,36 @@ velocity(w::Probe3d, E1::Real, E2::Real, E3::Real; kw...) =
 (w::Probe3d)(E₁::Real, E₂::Real, E₃::Real, fc::CorrFactor) =
     velocity(w, E₁, E₂, E₃, fc)
 
+(w::Probe3d)(E::NTuple, fc::CorrFactor) = velocity(w, E[1], E[2], E[3], fc)
+(w::Probe3d)(E::NTuple; kw...) = velocity(w, E[1], E[2], E[3]; kw...)
+
+function velocity!(U::AbstractMatrix{T}, w::Probe3d, E::AbstractMatrix{T},
+                   fc::CorrFactor) where{T}
+    @assert size(U,1) == size(E,1)
+    @assert size(U,2) == size(E,2) == 3
+
+    i = firstindex(U)
+    for ee in eachrow(E)
+        ux,uy,uz = velocity(w, ee[1], ee[2], ee[3], fc)
+        U[i,1] = ux
+        U[i,2] = uy
+        U[i,3] = uz
+        i = i + 1
+    end
+    return U
+end
+
+function velocity!(U::AbstractMatrix{T}, w::Probe3d, E::AbstractMatrix{T};
+                   kw...) where{T}
+    Em = mean(E, dims=1)
+    return velocity!(U, w, E, correct(w, Em[1,1], Em[1,2], Em[1,3]; kw...))
+end
+
+velocity(w::Probe3d, E::AbstractMatrix, fc::CorrFactor) =
+    velocity!(zeros(size(x)...), w, E, fc)
+
+velocity(w::Probe3d, E::AbstractMatrix; kw...) =
+    velocity!(zeros(size(x)...), w, E; kw...)
 
 """
 `dircalibr(anem, Uc, Uc1, Uc2, Uc3, ang, angtilt)`
@@ -128,7 +184,8 @@ Performs an angular calibration of a triaxial probe.
 
 ### Arguments
 
-* `anem`: `Probe3d` objetc
+* `cosw`: Cossine of wire directions
+* `idir`: Axis along which the calibration is carried out
 * `Uc`: Angular calibration velocity
 * `Uc1`: calibration velocity for wire 1
 * `Uc2`: calibration velocity for wire 1
@@ -139,7 +196,7 @@ Performs an angular calibration of a triaxial probe.
 The calibration velocity for each wire is the velocity obtained from
 the calibration curve already corrected for temperature changes.
 """
-function dircalibr(anem::Probe3d, Uc, Uc1, Uc2, Uc3, ϕ, θ=30.0)
+function dircalibr(cosw, idir, Uc, Uc1, Uc2, Uc3, ϕ, θ=30.0)
 
     Ux = Uc .* cosd.(θ) .+ 0.0 .* ϕ
     uperp = Uc .* sind.(θ)
@@ -147,13 +204,12 @@ function dircalibr(anem::Probe3d, Uc, Uc1, Uc2, Uc3, ϕ, θ=30.0)
     Uy = - uperp .* cosd.(ϕ)
 
     # Cossine of angles of wire with probe coordinate system
-    cosw = anem.cosϕ
     
     # Project this in wire coordinates
     U₁² = (Ux * cosw[1,1] + Uy * cosw[1,2] + Uz * cosw[1,3]).^2
     U₂² = (Ux * cosw[2,1] + Uy * cosw[2,2] + Uz * cosw[2,3]).^2
     U₃² = (Ux * cosw[3,1] + Uy * cosw[3,2] + Uz * cosw[3,3]).^2
-    idir = anem.idircal
+
     # Efective cooling velocity from probe calibration
     u1cos = Uc1 .^ 2 * cosw[1,idir]^2
     u2cos = Uc2 .^ 2 * cosw[2,idir]^2

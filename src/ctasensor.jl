@@ -87,16 +87,11 @@ function correct(w::CTASensor, E;
     else
         Tw = temperature(resistor(w), Rw)
     end
-    g = gain(w)
-    offset = w.offset
-    E1 = E/g + offset
-    return correct(E1, w.corr, T, P, fluid, Rw, Tw)
+    return correct(sensorvolt(w,E), w.corr, T, P, fluid, Rw, Tw)
     
 end
 
 velf(w::CTASensor, E) = w.fit(E)
-
-#velocity(w::CTASensor, E) = w.fit(E)
 
 function velocity(w::CTASensor, E::Real;
                  T=caltemp(w), P=pressure(w),
@@ -106,21 +101,18 @@ function velocity(w::CTASensor, E::Real;
 end
 
 function velocity(w::CTASensor, E::Real, fc::CorrFactor)
-    Ec = fc(E, gain(w), offset(w))
-    Uc = velf(Ec)
+    Ec = outvolt(w, sensorvolt(w, E)*fc.f)
+    Uc = velf(w, Ec)
     return (fc.nu / kinvisc(w.corr)) * Uc
 end
 
+#=
 function velocity!(U::AbstractVector, w::CTASensor, E::AbstractVector, fc::CorrFactor)
     @assert length(U) == length(E)
-    
-    g = gain(w)
-    o = offset(w)
-
     rν = fc.nu/kinvisc(w.corr)
     
     for (i,e) in enumerate(E)
-        ec = fc(e, g, o)
+        ec = outvolt(w, sensorvolt(w, E)*fc.f)
         uc = velf(ec)
         U[i] = rν * uc
     end
@@ -143,7 +135,7 @@ velocity(w::CTASensor, E::AbstractVector;
 
 velf!(U::AbstractVector, w::CTASensor, E::AbstractVector) = U .= w.fit.(E)
 velf(w::CTASensor, E::AbstractVector) = w.fit.(E)
-
+=#
 (w::CTASensor)(E; kw...) = velocity(w, E; kw...)
 (w::CTASensor)(E, fc::CorrFactor) = velocity(w, E, fc)
 

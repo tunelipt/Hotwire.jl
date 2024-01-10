@@ -45,47 +45,31 @@ function velf(w::Probe2d, E1::Real, E2::Real)
 end
 
 function velocity(w::Probe2d, E1::Real, E2::Real, fc::CorrFactor)
-    g1 = gain(sensor(w,1))
-    g2 = gain(sensor(w,2))
-    o1
-    Ec1 = fc(
-    Uc1 = sensor(w,1).fit(E1*fc.f[1]) * fc.nu[1] / kinvisc(sensor(w,1))
-    Uc2 = sensor(w,2).fit(E2*fc.f[2]) * fc.nu[2] / kinvisc(sensor(w,2))
+    w1 = sensor(w,1); w2 = sensor(w,2)
+    E1c = outvolt(w1, sensorvolt(w1, E1)*fc.f[1])
+    E2c = outvolt(w2, sensorvolt(w2, E2)*fc.f[2])
     
-
+    rnu = fc.nu[1]/kinvisc(w1) # We will assume the others are the same...
+    Ux,Uy = velf(w, E1c, E2c)
+    return Ux * rnu, Uy*rnu
 end
+
+velocity(w::Probe2d, E::NTuple, fc::CorrFactor) =
+    velocity(w, E[1], E[2], fc)
 
 velocity(w::Probe2d, E1::Real, E2::Real; kw...) = 
     velocity(w, E1, E2, correct(w, E1, E2; kw...))
 
-function velocity!(U::AbstractMatrix, w::Probe2d,
-                   E1::AbstractVector, E2::AbstractVector, fc::CorrFactor)
-    @assert size(U,1) == size(E1,1) == size(E2,1)
-    for i in eachindex(E1)
-        ux,uy = velocity(w, E1[i], E2[i], fc)
-        U[i,1] = ux
-        U[i,2] = uy
-    end
-    return U
-end
+velocity(w::Probe2d, E::NTuple; kw...) = 
+    velocity(w, E[1], E[2]; kw...)
 
-velocity!(U::AbstractMatrix, w::Probe2d,
-          E1::AbstractVector, E2::AbstractVector; kw...) = 
-              velocity!(U, w, E1, E2, correct(w, mean(E1), mean(E2); kw...))
-                        
-                        
-velocity(w::Probe2d, E1::AbstractVector, E2::AbstractVector, fc::CorrFactor) =
-    velocity!(zeros(length(E1)), w, E1, E2, fc)
-
-velocity(w::Probe2d, E1::AbstractVector, E2::AbstractVector; kw...) =
-    velocity!(zeros(length(E1)), w, E1, E2; kw...)
-
-
-function velocity!(U::AbstractMatrix, w::Probe2d,
-                   E::AbstractMatrix, fc::CorrFactor)
+function velocity!(U::AbstractMatrix{T}, w::Probe2d,
+                   E::AbstractMatrix{T}, fc::CorrFactor) where {T}
     @assert size(U,1) == size(E,1)
-    i = 1
-    for ee in eachrow(E1)
+    @assert size(U,2) == size(E,2) == 2
+
+    i = firstindex(U)
+    for ee in eachrow(E)
         ux,uy = velocity(w, ee[1], ee[2], fc)
         U[i,1] = ux
         U[i,2] = uy
@@ -93,22 +77,22 @@ function velocity!(U::AbstractMatrix, w::Probe2d,
     end
     return U
 end
-
-velocity(w::Probe2d,
-         E::AbstractMatrix, fc::CorrFactor) = velocity!(zeros(size(x)...), w, E, fc)
-
-function velocity!(U::AbstractMatrix, w::Probe2d,
-                   E::AbstractMatrix; kw...)
+function velocity!(U::AbstractMatrix{T}, w::Probe2d,
+                   E::AbstractMatrix{T}; kw...) where {T}
     Em = mean(E, dims=1)
-    fc = correct(w, Em[1,1], Em[1,2], Em[1,3]; kw...)
-    return velocity!(U, w, E, fc)
+    return velocity!(U, w, E, correct(w, Em[1,1], Em[1,2], Em[1,3]; kw...))
 end
 
-velocity(w::Probe2d,
-         E::AbstractMatrix; kw...) = velocity!(zeros(size(x)...), w, E; kw...)
+velocity(w::Probe2d, E::AbstractMatrix, fc::CorrFactor) =
+    velocity!(zeros(size(x)...), w, E, fc)
+
+velocity(w::Probe2d, E::AbstractMatrix; kw...) =
+    velocity!(zeros(size(x)...), w, E; kw...)
 
 (w::Probe2d)(E1, E2, fc::CorrFactor) = velocity(w, E1, E2, fc)
 (w::Probe2d)(E1, E2; kw...) = velocity(w, E1, E2; kw...)
+(w::Probe2d)(E::NTuple, fc::CorrFactor) = velocity(w, E[1], E[2], fc)
+(w::Probe2d)(E::NTuple; kw...) = velocity(w, E[1], E[2]; kw...)
 (w::Probe2d)(E::AbstractMatrix, fc::CorrFactor) = velocity(w, E, fc)
 (w::Probe2d)(E::AbstractMatrix; kw...) = velocity(w, E; kw...)
 
@@ -133,7 +117,7 @@ Perform directional calibration of a 2d probe (X wire).
 
 Coefficients `k₁²` and `k₂²` as a tuple.
 """
-function dircalibr(w::Probe2d, ang, Uc, Uc1, Uc2)
+function dircalibr(ang, Uc, Uc1, Uc2)
     
     A = @. (cosd(ang) + sind(ang))^2
     B = @. (cosd(ang) - sind(ang))^2

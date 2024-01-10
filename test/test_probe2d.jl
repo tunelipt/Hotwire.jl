@@ -130,7 +130,7 @@ let
     Uc1 = @. sqrt( 2*Ue1^2 / (1 + k1))
     Uc2 = @. sqrt( 2*Ue2^2 / (1 + k2))
 
-    k1b, k2b = dircalibr(probe, ang, Uc, Uc1, Uc2)
+    k1b, k2b = dircalibr(ang, Uc, Uc1, Uc2)
 
     @test k1b ≈ k1
     @test k2b ≈ k2

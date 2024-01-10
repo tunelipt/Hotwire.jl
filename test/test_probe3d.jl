@@ -82,7 +82,8 @@ let
     @test Uy1 ≈ Uy
     @test Uz1 ≈ Uz
 
-    k₁², h₁² = dircalibr(probe, Uc, Uc1, Uc2, Uc3, ϕ, θ)
+    k₁², h₁² = dircalibr(probe.cosϕ, probe.idircal,
+                         Uc, Uc1, Uc2, Uc3, ϕ, θ)
 
     @test k₁² ≈ k²
     @test h₁² ≈ h²
