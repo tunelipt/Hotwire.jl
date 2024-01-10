@@ -5,7 +5,7 @@
 let D=5e-6, L=2e-3
     Ta = 273.15 + 20.0
     Pa = 101325.0
-
+    signal = linsignal(1,0)
     AIRconst = ConstPropFluid(AIR, Ta, Pa)
 
     R = Resistor(R=3.5, a=0.4e-2, T=Ta)
@@ -32,7 +32,7 @@ let D=5e-6, L=2e-3
 
     corr = TempCorrect(Ta, Pa, AIRconst, Rw, Tw)
     
-    w =  CTASensor(R, Rw, Tw, 1.0, 0.0, corr, fit)
+    w =  CTASensor(R, Rw, Tw, signal, corr, fit)
 
     @test temperature(w) == Tw
     @test resistance(w) == Rw
@@ -100,8 +100,9 @@ let
     Tw = temperature(R, Rw)
 
     corr = mf58correct(Ta, Pa, AIRconst, Rw, Tw)    
-    
-    w =  CTASensor(R, Rw, Tw, 1.0, 0.0, corr, fit)
+    signal = linsignal(1,0)
+
+    w =  CTASensor(R, Rw, Tw, signal, corr, fit)
 
     @test temperature(w) == Tw
     @test resistance(w) == Rw

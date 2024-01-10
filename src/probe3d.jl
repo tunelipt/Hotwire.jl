@@ -88,13 +88,6 @@ function correct(w::Probe3d, E1::Real, E2::Real, E3::Real; kw)
 end
 
 function vel_aux(w::Probe3d, Uc1, Uc2, Uc3)
-#function velocity(w::Probe3d, E₁::Real, E₂::Real, E₃::Real, fc::CorrFactor)
-
-    # Calibration curve and temperature correction for
-    # each sensor and calculation of effective velocity for each wire
-    #Uc1 = sensor(w,1).fit(E₁*fc.f[1]) * fc.nu[1] / kinvisc(sensor(w,1))
-    #Uc2 = sensor(w,2).fit(E₂*fc.f[2]) * fc.nu[2] / kinvisc(sensor(w,2))
-    #Uc3 = sensor(w,3).fit(E₃*fc.f[3]) * fc.nu[3] / kinvisc(sensor(w,3))
     
     Uᵉ = [Uc1^2 * w.c2e[1], 
           Uc2^2 * w.c2e[2], 
@@ -122,9 +115,9 @@ end
 
 function velocity(w::Probe3d, E1::Real, E2::Real, E3::Real, fc::CorrFactor)
     w1 = sensor(w,1); w2 = sensor(w,2); w3 = sensor(w,3)
-    E1c = outvolt(w1, sensorvolt(w1, E1)*fc.f[1])
-    E2c = outvolt(w2, sensorvolt(w2, E2)*fc.f[2])
-    E3c = outvolt(w3, sensorvolt(w3, E3)*fc.f[3])
+    E1c = outsignal(w1, sensorvolt(w1, E1)*fc.f[1])
+    E2c = outsignal(w2, sensorvolt(w2, E2)*fc.f[2])
+    E3c = outsignal(w3, sensorvolt(w3, E3)*fc.f[3])
     
     rnu = fc.nu[1]/kinvisc(w1) # We will assume the others are the same...
     Ux, Uy, Uz = velf(w, E1c, E2c, E3c)

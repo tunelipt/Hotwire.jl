@@ -31,7 +31,12 @@ information on calibration, bridge configuration, output filter, etc.
 
 resistor(w::Probe1d) = resistor(w.sensor)
 sensor(w::Probe1d) = w.sensor
-gain(w::Probe1d) = gain(w.sensor)
+
+gain(w::Probe1d) = gain(w.sensor.signal)
+offset(w::Probe1d) = offset(w.sensor.signal)
+sensorvolt(w::Probe1d, E) = sensorvolt(w.sensor, E)
+outsignal(w::Probe1d, E) = outsignal(w.sensor, E)
+
 reftemp(w::Probe1d) = reftemp(w.sensor)
 caltemp(w::Probe1d) = caltemp(w.sensor)
 resistance(w::Probe1d) = resistance(w.sensor)

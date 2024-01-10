@@ -11,7 +11,7 @@ export AIR, HELIUM, NITROGEN, C3H8, OXYGEN, IdealGas
 
 export AbstractAnemCorrect, TempCorrect, WireCorrect, GlassbeadCorrect
 export mf58correct, correct, tempcorrect
-export CorrFactor, corrfactor, voltage, sensorvolt, outvolt
+export CorrFactor, corrfactor, voltage, sensorvolt, outsignal, linsignal
 
 export CalibrCurve, correctmodel, correction, pressure
 
@@ -43,6 +43,7 @@ gain(w::AbstractThermalAnemometer) = w.gain
 include("resistor.jl")
 include("fluid.jl")
 include("correct.jl")
+include("signal.jl")
 include("ctasensor.jl")
 include("ccasensor.jl")
 include("fit.jl")

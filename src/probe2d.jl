@@ -13,6 +13,11 @@ end
 sensor(w::Probe2d) = w.sensor
 sensor(w::Probe2d, i::Integer) = w.sensor[i]
 
+gain(w::Probe2d, i) = gain(w.sensor[i].signal)
+offset(w::Probe2d, i) = offset(w.sensor[i].signal)
+sensorvolt(w::Probe2d, E, i) = sensorvolt(w.sensor[i], E)
+outsignal(w::Probe2d, E, i) = outsignal(w.sensor[i], E)
+
 reftemp(anem::Probe2d) = reftemp(anem.sensor[1])
 
 function correct(w::Probe2d, E1::Real, E2::Real; kw...)
@@ -46,8 +51,8 @@ end
 
 function velocity(w::Probe2d, E1::Real, E2::Real, fc::CorrFactor)
     w1 = sensor(w,1); w2 = sensor(w,2)
-    E1c = outvolt(w1, sensorvolt(w1, E1)*fc.f[1])
-    E2c = outvolt(w2, sensorvolt(w2, E2)*fc.f[2])
+    E1c = outsignal(w1, sensorvolt(w1, E1)*fc.f[1])
+    E2c = outsignal(w2, sensorvolt(w2, E2)*fc.f[2])
     
     rnu = fc.nu[1]/kinvisc(w1) # We will assume the others are the same...
     Ux,Uy = velf(w, E1c, E2c)

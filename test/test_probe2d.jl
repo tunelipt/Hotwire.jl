@@ -12,9 +12,9 @@ let
     Rw = R(Tw)
 
     corr = TempCorrect(Ta, Pa, AIRconst, Rw, Tw)
-    
-    wire1 = CTASensor(R, Rw, Tw, 1.0, 0.0, corr, E->E)
-    wire2 = CTASensor(R, Rw, Tw, 1.0, 0.0, corr, E->E)
+    signal = linsignal(1, 0)
+    wire1 = CTASensor(R, Rw, Tw, signal, corr, E->E)
+    wire2 = CTASensor(R, Rw, Tw, signal, corr, E->E)
     
 
     probe = Probe2d((wire1, wire2), (0.0, 0.0), "")

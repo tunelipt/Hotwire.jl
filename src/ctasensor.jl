@@ -1,19 +1,5 @@
 
-"""
-`sensorvolt(w, E)`
 
-Returns the voltage accross the sensor element taking into consideration
-the output voltage that has a gain and an offset.
-"""
-sensorvolt(w::AbstractThermalAnemometer,E) = E/w.gain + w.offset
-
-"""
-`outvolt(w,E)`
-
-Returns the output voltage by applying sensor gain and offset
-from voltage accross the sensor.
-"""
-outvolt(w::AbstractThermalAnemometer, E) = (E - w.offset)*w.gain
 
 
 """
@@ -33,17 +19,15 @@ where `a` is the overheat ratio, `Rw` is the operating resistance of the element
 `Ro` is the reference resistance (resistance at reference temperature).
 
 """
-struct CTASensor{Correct,U,RT,Fit} <: AbstractCTA
+struct CTASensor{Correct,U,RT,Fit,Signal} <: AbstractCTA
     "Temperature dependent resistor"
     R::RT
     "Operating resistance of the sensor"
     Rw::U
     "Operating temperature of the sensor"
     Tw::U
-    "Voltage output gain"
-    gain::U
-    "Voltage offset"
-    offset::U
+    "Signal conversion - resitor voltage <-> output"
+    signal::Signal
     "Correction model"
     corr::Correct
     "Calibration curve"
@@ -64,20 +48,23 @@ reftemp(w::CTASensor) = reftemp(w.R)
 refresist(w::CTASensor) = refresist(w.R)
 
 "Overheat ratio of the CTA"
-overheatratio(w::AbstractCTA, T) = resistance(w) / resistance(resistor(w),T) - 1
+overheatratio(w::AbstractCTA, T) =
+    resistance(w) / resistance(resistor(w),T) - 1
+
 overheatratio(w::AbstractCTA) = resistance(w) / refresist(w) - 1
 
 "Temperature above reference temperature that the CTA sensor operates"
 overtemp(w::AbstractCTA,T) = temperature(w) - T
 overtemp(w::AbstractCTA) = temperature(w) - reftemp(w) 
 
-gain(w::AbstractCTA) = w.gain
-offset(w::AbstractCTA) = w.offset
 
 fluid(w::CTASensor) = fluid(w.corr)
 pressure(w::CTASensor) = pressure(w.corr)
 caltemp(w::CTASensor) = reftemp(w.corr)
 kinvisc(w::CTASensor) = kinvisc(w.corr)
+
+sensorvolt(w::CTASensor, E) = sensorvolt(w.signal, E)
+outsignal(w::CTASensor, E) = outsignal(w.signal, E)
 
 function correct(w::CTASensor, E;
                  T=caltemp(w), P=pressure(w),
@@ -87,7 +74,7 @@ function correct(w::CTASensor, E;
     else
         Tw = temperature(resistor(w), Rw)
     end
-    return correct(sensorvolt(w,E), w.corr, T, P, fluid, Rw, Tw)
+    return correct(sensorvolt(w.signal,E), w.corr, T, P, fluid, Rw, Tw)
     
 end
 
@@ -101,7 +88,7 @@ function velocity(w::CTASensor, E::Real;
 end
 
 function velocity(w::CTASensor, E::Real, fc::CorrFactor)
-    Ec = outvolt(w, sensorvolt(w, E)*fc.f)
+    Ec = outsignal(w, sensorvolt(w, E)*fc.f)
     Uc = velf(w, Ec)
     return (fc.nu / kinvisc(w.corr)) * Uc
 end
@@ -112,7 +99,7 @@ function velocity!(U::AbstractVector, w::CTASensor, E::AbstractVector, fc::CorrF
     rν = fc.nu/kinvisc(w.corr)
     
     for (i,e) in enumerate(E)
-        ec = outvolt(w, sensorvolt(w, E)*fc.f)
+        ec = outsignal(w, sensorvolt(w, E)*fc.f)
         uc = velf(ec)
         U[i] = rν * uc
     end
