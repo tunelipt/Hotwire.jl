@@ -379,6 +379,94 @@ function mf58correct(T, P, fluid, Rw, Tw; n=1/3, q=0.4,
 end   
 
 
+"""
+`mf52correct(T, P, fluid, Rw, Tw; n=1/3, q=0.8,
+             N=2, beta=150.0, fluid=Air,
+             D=2e-3, L=4e-3, d=0.5e-3, kf=30.0)`
+
+Creates a [`InsulatedCorrect`](@ref) for thermistors of type
+MF-52.
+
+These thermistors can have a wide variation in nominal resistance but they have
+two leads made of electric steel with a diameter of 0.4 mm. The body itself is made
+of an approximately spherical layer of thermoplastic and the small ones have a
+diameter of 2 mm. 
+
+From finite element simulations and guessing the exact thermal conductivity
+of the glass the value for the thermal resistance ``β`` is around 30 ``K/W``
+(an accurate simulation is still required here!!!). Further studies
+ (numerical and preferentially experimental) should be carried out to estimate more
+accurate values for ``β``
+
+Of course, the MF-52 thermistor have two wire leads but depending
+on probe construction, both leads might be insulated so the heat they
+loose to the fluid is negligible.
+
+The convective heat transfer coefficient in the body is different from the value
+observed for the leads. In this model, we assume that ``h_f`` (leads) is a fixed
+fraction (``γ``) of the value for the body ``h_a``. To estimate this fraction,
+we assume that
+
+``Nu(Re,Pr) = a⋅Re^q ⋅ Prⁿ``
+
+With this correlation, we have
+
+``γ = h_f / h_a = (d / D)^q ``
+
+In this case the relation is approximate since differently shaped geometries
+are present: the body is approximately spherical and the leads are cylindrical.
+The default value was obtained using correlations from heat transfer books.
+
+
+## Arguments
+ * `T` Fluid temperature
+ * `Rw` Resistance of the resistance sensor
+ * `Tw` Temperature of the resistance sensor
+ * `P` Atmospheric pressure in ``Pa``
+ * `fluid` Fluid 
+ * `n` Assumed exponent for ``Nu(Re,Pr) = f(Re)⋅Prⁿ`` correlation
+ * `q` Re exponent in assumed correlation for ``Nu`` see above explanation
+ * `N` Number of _uninsulated_ leads leaving the body
+ * `beta` Value the thermal resistance of the glass insulator in ``K/W``
+ * `fluid` Fluid used for calculating the properties
+ * `D` Diameter in ``mm`` of the glass bead 
+ * `L` Length in ``mm`` of the glass bead
+ * `d` Diameter in ``mm`` of the leads
+ * `kf` Thermal conductivity of the leads
+
+## Return value
+
+A [`InsulatedCorrect`](@ref) object
+"""
+function mf52correct(T, P, fluid, Rw, Tw; n=1/3, q=0.8,
+                     N=2, beta=150.0, D=2e-3, d=0.4e-3, kf=30.0)
+    Tm = (Tw + T) / 2
+    ρ = density(fluid, Tm, P)
+    μ = viscosity(fluid, Tm, P)
+    kₐ = heatcond(fluid, Tm, P)
+    cₚ = specheat(fluid, Tm, P)
+    
+    ν = μ / ρ
+    Pr = cₚ * μ / kₐ
+    ϕ = kₐ * Pr^n
+
+    #D = 2.0e-3 # Diameter of thew glass body
+    A = π*D^2  # Approximate surface area of the insulated surface body
+    c1 = A / D
+    
+    #d = 0.5e-3 # Diameter of the electric steel leads
+    Pf = π*d  # Perimiter of the leads
+    Af = π*d^2/4 # Cross section area of the leads
+    #kf = 30.0 #W/mK # Heat conductivity of steel
+    
+    γ = sqrt(d/D) # Convection coefficient factor
+    
+    β = one(ϕ)*beta  # Ts = Tw - β⋅Q̇
+    c2 = N * sqrt(γ*kf*Af*Pf/D)
+    return InsulatedCorrect(T, Rw, Tw, P, fluid, ν, ϕ, n, β, c1, c2)
+end   
+
+
 function correct(E, mc_cal::InsulatedCorrect, mc::InsulatedCorrect)
     
     Rwc = resistance(mc_cal)
