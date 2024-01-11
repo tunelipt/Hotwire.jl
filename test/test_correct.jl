@@ -142,7 +142,7 @@ end
 
 
 let
-    # Testing GlassbeadCorrect with constant properties
+    # Testing InsulatedCorrect with constant properties
     T1 = 298.15
     T2 = T1 + 5
     P = 101325.0
@@ -163,8 +163,8 @@ let
     n = 1/3
 
     corr1 = mf58correct(T1, P, x1, Rw, Tw; n=n)
-    corr2 = GlassbeadCorrect(corr1, T2, P, x1, Rw, Tw)
-    corr3 = GlassbeadCorrect(corr1, T1, P, x1, Rw1, Tw1)
+    corr2 = InsulatedCorrect(corr1, T2, P, x1, Rw, Tw)
+    corr3 = InsulatedCorrect(corr1, T1, P, x1, Rw1, Tw1)
     
     E = 6.0
     @test correct(E, corr1, corr1).f ≈ 1
@@ -204,8 +204,8 @@ let
     cw3 = WireCorrect(cw1, T1, P, HELIUM, Rw1, Tw1)
 
     gb1 = mf58correct(T1, P, AIR, Rw, Tw; n=n, N=0, beta=0.0)
-    gb2 = GlassbeadCorrect(gb1, T2, P, HELIUM, Rw, Tw)
-    gb3 = GlassbeadCorrect(gb1, T1, P, HELIUM, Rw1, Tw1)
+    gb2 = InsulatedCorrect(gb1, T2, P, HELIUM, Rw, Tw)
+    gb3 = InsulatedCorrect(gb1, T1, P, HELIUM, Rw1, Tw1)
 
     E = 6.0
     @test correct(E, gb1, gb1).f ≈ 1
