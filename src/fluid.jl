@@ -123,6 +123,9 @@ const c_k_N₂ = (-0.0006241, 0.000109906, -9.13581e-8, 7.26363e-11, -2.73799e-1
 const c_cₚ_CO₂ = Ru/M_CO₂ .* (0.23568130E+01, 0.89841299E-02,-0.71220632E-05,
                              0.24573008E-08,-0.14288548E-12)
 
+const c_μ_CO₂ = (7.19059e-6, 5.43706e-10, 1.22949e-10, -1.50777e-13, 5.9986e-17)
+const c_k_CO₂ = (0.00522826, -1.43376e-5, 2.41587e-7, -2.49604e-10, 8.42276e-14)
+
 
 const c_cₚ_He  = (Ru / M_He * 2.50000000E+00, )
 const c_μ_He = (4.09517e-6, 5.55975e-8, 2.90184e-12, -5.28468e-14, 3.6016e-17)
@@ -134,9 +137,11 @@ const c_μ_O₂ = (-9.66187e-7, 9.56013e-8, -9.94813e-11, 8.15837e-14, -2.95515e
 const c_k_O₂ = (-0.0018068, 0.000123112, -1.45337e-7, 1.83738e-10, -9.52034e-14)
 
 
-const c_cₚ_H₂  = Ru / M_He .* (2.34433112E+00, 7.98052075E-03,-1.94781510E-05,
+const c_cₚ_H₂  = Ru / M_H₂ .* (2.34433112E+00, 7.98052075E-03,-1.94781510E-05,
                               2.01572094E-08, -7.37611761E-12)
 
+const c_k_H₂ = (-0.0155079, 0.000945333, -1.33176e-6, 1.43404e-9, -5.97372e-13)
+const c_μ_H₂ = (1.04885e-6, 3.57237e-8, -4.36667e-11, 4.7382e-14, -2.12645e-17)
 
        
 const AIR = IdealGas(M_Air, IPoly(c_cₚ_Air,:T), IPoly(c_μ_Air,:T), IPoly(c_k_Air,:T))
@@ -146,7 +151,9 @@ const HELIUM = IdealGas(M_He, IPoly(c_cₚ_He,:T), IPoly(c_μ_He,:T), IPoly(c_k_
 const C3H8 = IdealGas(M_C₃H₈, IPoly(c_cₚ_C₃H₈,:T), IPoly(c_μ_C₃H₈,:T),
                       IPoly(c_k_C₃H₈,:T))
 
+const CO2  = IdealGas(M_CO₂, IPoly(c_cₚ_CO₂,:T), IPoly(c_μ_CO₂,:T), IPoly(c_k_CO₂,:T))
 
+const HYDROGEN  = IdealGas(M_H₂, IPoly(c_cₚ_H₂,:T), IPoly(c_μ_H₂,:T), IPoly(c_k_H₂,:T))
 
 
     

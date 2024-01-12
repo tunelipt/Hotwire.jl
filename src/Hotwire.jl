@@ -7,7 +7,7 @@ export Thermistor, Resistor, AbstractResistor, temperature, resistance
 export reftemp, refresist
 
 export ConstPropFluid, heatcond, prandtl, viscosity, kinvisc, density, specheat
-export AIR, HELIUM, NITROGEN, C3H8, OXYGEN, IdealGas
+export AIR, HELIUM, NITROGEN, C3H8, OXYGEN, IdealGas, CO2, HYDROGEN
 
 export AbstractAnemCorrect, TempCorrect, WireCorrect, InsulatedCorrect
 export mf58correct, mf52correct
