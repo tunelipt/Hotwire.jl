@@ -2,10 +2,12 @@
 # This file implements a relationship between resistor voltage
 # and signal output.
 
+export offset
 struct LinearTransform{U,V}
     gain::U
     offset::V
 end
+Base.broadcastable(w::LinearTransform) = Ref(w)
 
 linsignal(g,o) = LinearTransform(g,o)
 

@@ -1,4 +1,5 @@
 # DANTEC probes and hardware
+export dantec1d, dantec2d, dantec3d
 
 struct StreamlineBridge <: AbstractHardware
     "Anemometer system model"
@@ -49,7 +50,7 @@ Information about hotwire hardware system.
 """
 function StreamlineBridge(config ;model="Streamline", tag="", T0=nothing, br=1/20)
     btype = round(Int16,config[1])
-    overheat = confgig[2]
+    overheat = config[2]
     Rdecade = config[3]
     Rprobe = config[4]
     Rcable = config[5]
@@ -91,8 +92,10 @@ function dantec1d(hconfig, calibr, fitfun; model="", tag="", alpha=0.4e-2, fluid
     ΔR =  (Rdecade * br  - Rprobe)
     Rw = R0 + ΔR
 
-    T0 = bridge.Tr + 273.15  # Resistor reference temperature in K
-
+    if isnothing(T0)
+        T0 = bridge.Tr + 273.15  # Resistor reference temperature in K
+    end
+    
     R = Resistor(R=R0, a=alpha, T=T0)
     Tw = temperature(R, Rw)
     
@@ -107,11 +110,11 @@ function dantec1d(hconfig, calibr, fitfun; model="", tag="", alpha=0.4e-2, fluid
 
     signal = linsignal(bridge.gain, bridge.offset)
     
-    corr = WireCorrect(Tm, Pm, fluid, Rw, Rw, n)
+    corr = WireCorrect(Tm, Pm, fluid, Rw, Tw, n)
     
-    Ei = [(e/g + o) for e in E]
+    Ei = sensorvolt.(signal, E)
     fc = [correct(e, corr, Tm, Pm, fluid, Rw, Tw) for e in Ei]
-    Ec = [(f.E - o)*g for f in fc]
+    Ec = outsignal.(signal, E)
 
     fit = fitfun(Ec, Uc)
 

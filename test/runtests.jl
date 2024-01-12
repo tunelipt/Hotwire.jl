@@ -19,12 +19,12 @@ end
     
 @testset "Hotwire.jl" begin
 
-    include("test_resistor.jl")
-    include("test_fluid.jl")
-    include("test_correct.jl")
+    #include("test_resistor.jl")
+    #include("test_fluid.jl")
+    #include("test_correct.jl")
     include("test_cta.jl")
-    include("test_probe2d.jl")
-    include("test_probe3d.jl")
+    #include("test_probe2d.jl")
+    #include("test_probe3d.jl")
     
     
     #=

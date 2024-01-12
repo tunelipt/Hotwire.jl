@@ -93,36 +93,20 @@ function velocity(w::CTASensor, E::Real, fc::CorrFactor)
     return (fc.nu / kinvisc(w.corr)) * Uc
 end
 
-#=
-function velocity!(U::AbstractVector, w::CTASensor, E::AbstractVector, fc::CorrFactor)
-    @assert length(U) == length(E)
-    rν = fc.nu/kinvisc(w.corr)
-    
-    for (i,e) in enumerate(E)
-        ec = outsignal(w, sensorvolt(w, E)*fc.f)
-        uc = velf(ec)
-        U[i] = rν * uc
-    end
-    return U
-end
-velocity(w::CTASensor, E::AbstractVector, fc::CorrFactor) =
-    velocity!(zeros(length(E)), w, E, fc)
-
 function velocity!(U::AbstractVector, w::CTASensor, E::AbstractVector;
                    T=caltemp(w), P=pressure(w),
                    fluid=fluid(w), Rw=resistance(w))
-    fc = correct(w, E; T=T, P=P, fluid=fluid, Rw=Rw)
-    return velocity!(U, w, E, fc)
+    U .= velocity.(w, E, correct(w, mean(E); T=T, P=P, fluid=fluid, Rw=Rw))
+    return U
 end
 
-velocity(w::CTASensor, E::AbstractVector;
+velocity(w::CTASensor, E::AbstractVector{U};
          T=caltemp(w), P=pressure(w),
-         fluid=fluid(w), Rw=resistance(w)) =
-             velocity!(zeros(length(E)), w, E; T=T, P=P, fluid=fluid, Rw=Rw)
+         fluid=fluid(w), Rw=resistance(w)) where {U} =
+             velocity!(zeros(U, length(E)), w, E;
+                       T=T, P=P, fluid=fluid, Rw=Rw)
 
-velf!(U::AbstractVector, w::CTASensor, E::AbstractVector) = U .= w.fit.(E)
-velf(w::CTASensor, E::AbstractVector) = w.fit.(E)
-=#
+
 (w::CTASensor)(E; kw...) = velocity(w, E; kw...)
 (w::CTASensor)(E, fc::CorrFactor) = velocity(w, E, fc)
 
