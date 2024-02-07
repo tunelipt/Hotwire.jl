@@ -350,7 +350,7 @@ With this correlation, we have
 A [`InsulatedCorrect`](@ref) object
 """
 function mf58correct(T, P, fluid, Rw, Tw; n=1/3, q=0.4,
-                     N=2, beta=150.0, D=2e-3, L=4e-3, d=0.5e-3, kf=30.0)
+                     N=2, beta=70.0, D=2e-3, L=4e-3, d=0.5e-3, kf=30.0)
     Tm = (Tw + T) / 2
     ρ = density(fluid, Tm, P)
     μ = viscosity(fluid, Tm, P)
@@ -439,7 +439,7 @@ The default value was obtained using correlations from heat transfer books.
 A [`InsulatedCorrect`](@ref) object
 """
 function mf52correct(T, P, fluid, Rw, Tw; n=1/3, q=0.8,
-                     N=2, beta=150.0, D=2e-3, d=0.4e-3, kf=30.0)
+                     N=2, beta=10.0, D=2e-3, d=0.4e-3, kf=30.0)
     Tm = (Tw + T) / 2
     ρ = density(fluid, Tm, P)
     μ = viscosity(fluid, Tm, P)
