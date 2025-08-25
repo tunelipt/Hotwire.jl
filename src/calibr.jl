@@ -27,8 +27,9 @@ function makecaltable(E::AbstractVector{X}, U::AbstractVector{X}, T, P) where {X
     return Tm, Pm, caltab
 end
 
+resistor(cal::AbstractAnemCalibr) = cal.R
 
-struct TempCalibr{X,RT<:AbstractResistor,Fluid,Fit} <: AbstractAnemCalibr
+struct TempCalibr{X,RT<:AbstractResistor,S,Fluid,Fit} <: AbstractAnemCalibr
     "Resistance element"
     R::RT
     "Calibration operating resistance"
@@ -75,9 +76,9 @@ function TempCalibr(R::RT,
     Tw = temperature(R, Rw)
 
     # Correct voltages to conditions Rw, T, P
-    E = sqrt.( Rw./Rwc .* (Tw - T) ./ (Twc .- Tc)  )
+    E = Ec .* sqrt.( Rw./Rwc .* (Tw - T) ./ (Twc .- Tc)  )
     
-    fit = makefitfun(E, U)
+    fit = makefitfun(E, Uc)
 
     
     return TempCalibr(R, Rw, Tw, T, P, fluid, caltab, fit)
@@ -88,28 +89,33 @@ function hwcorrect(cal::TempCalibr; T=caltemp(cal), P=calpress(P),
                    fluid=calfluid(cal),Rw=calwres(cal))
     
     Tw = temperature(cal.R, Rw)
-    return sqrt( cal.Rw/Rw * (cal.Tw - cal.T) / (Tw - T) )
+    ef = sqrt( cal.Rw/Rw * (cal.Tw - cal.T) / (Tw - T) )
+    return ef, one(ef)
 end
 
     
 function velocity(cal::TempCalibr, E; T=caltemp(cal), P=calpress(P),
                   fluid=calfluid(cal),Rw=calwres(cal))
-    fcorr = hwcorrect(cal; T=T, P=P, fluid=fluid, Rw=Rw)
-    Ec = fcorr * E
-    return fit(E)
+    fcorr,uf = hwcorrect(cal; T=T, P=P, fluid=fluid, Rw=Rw)
+    return uf*fit(fcorr * E)
 end
 
 function velocity!(U::AbstractArray, cal::TempCalibr, E::AbstractArray;
                    T=caltemp(cal), P=calpress(P),
                    fluid=calfluid(cal),Rw=calwres(cal))
     @assert size(U) == size(E)
-    fcorr = hwcorrect(cal; T=T, P=P, fluid=flud, Rw=Rw)
-    for i in eachindex(E)
-        U[i] = cal.fit(E[i]  * fcorr)
+    fcorr,uf = hwcorrect(cal; T=T, P=P, fluid=flud, Rw=Rw)
+    for (e,i) in enumerate(E)
+        U[i] = uf*cal.fit(e * fcorr)
     end
     return U
         
 end
+
+velocity(cal::TempCalibr, E::AbstractArray;
+         T=caltemp(cal), P=calpress(P),
+         fluid=calfluid(cal),Rw=calwres(cal)) = velocity!(similar(E), cal, E; T=T,
+                                                          P=P, fluid=fluid, Rw=Rw)
 
 struct HWCalibr{X<:AbstractFloat,RT<:AbstractResistor,
                          Fluid,Fit} <: AbstractAnemCalibr
@@ -139,12 +145,12 @@ end
 
 
 function HWCalibr(R::RT,
-                           Ec::AbstractVector,
-                           Uc::AbstractVector,
-                           Tc, Pc, Rwc, makefitfun; n=0.3, theta=0.5,
-                           Rw=nothing, T=nothing, P=nothing,
-                           fluid=AIR) where {RT<:AbstractResistor}
-
+                  Ec::AbstractVector,
+                  Uc::AbstractVector,
+                  Tc, Pc, Rwc, makefitfun; n=0.3, theta=0.5,
+                  Rw=nothing, T=nothing, P=nothing,
+                  fluid=AIR) where {RT<:AbstractResistor}
+    
     Tm, Pm, caltab = makecaltable(Ec, Uc, Tc, Pc)
     
     # Reference values
@@ -182,17 +188,16 @@ function HWCalibr(R::RT,
 
     fit = makefitfun(Ex, Rec)
 
-   
+    
     
     return HWCalibr(R, Rw, Tw, T, P, fluid, caltab, fit, n, nu)
     
 end
 
 
-
 function velocity(cal::HWCalibr, E; T=caltemp(cal), P=calpress(P),
                   fluid=calfluid(cal),Rw=calwres(cal))
-
+    
     Tw = temperature(cal.R, Rw)
 
     ΔT = Tw - T
@@ -206,6 +211,7 @@ function velocity(cal::HWCalibr, E; T=caltemp(cal), P=calpress(P),
     
     return nu * cal.fit(E*E/(phi * Rw * ΔT))
 end
+
 
 
 function velocity!(U::AbstractArray, cal::HWCalibr, E::AbstractArray;
@@ -230,4 +236,8 @@ function velocity!(U::AbstractArray, cal::HWCalibr, E::AbstractArray;
 end
 
 
+velocity(cal::HWCalibr, E::AbstractArray;
+         T=caltemp(cal), P=calpress(P),
+         fluid=calfluid(cal),Rw=calwres(cal)) = velocity!(similar(E), cal, E; T=T,
+                                                          P=P, fluid=fluid, Rw=Rw)
 

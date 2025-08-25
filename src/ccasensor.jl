@@ -6,8 +6,7 @@
 A structure to manage constant temperature anemometer sensors (CTA)
 
  * `R` Resistance element
- * `Rw` Operating resistance
- * `gain` Output gain, ``Eo = g⋅E``
+ * `I` Operating constant current
 
 The overheat ratio is defined by the ratio between over-resistance and reference 
 resistance:
@@ -17,20 +16,18 @@ where `a` is the overheat ratio, `Rw` is the operating resistance of the element
 `Ro` is the reference resistance (resistance at reference temperature).
 
 """
-struct CCASensor{Correct,U,RT,Fit} <: AbstractCCA
+struct CCASensor{Calibr,U,RT,Fit} <: AbstractCCA
     "Temperature dependent resistor"
     R::RT
     "Operating electrical current"
     I::U
     "Voltage output gain"
     gain::U
-    "Correction model"
-    corr::Correct
-    "Calibration curve"
-    fit::Fit
+    "Calibration and correction model"
+    corr::Calibr
 end
-
 Base.broadcastable(sensor::CCASensor) = Ref(sensor)
+
 
 resistor(w::AbstractCCA) = w.R
 

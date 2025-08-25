@@ -2,6 +2,37 @@
 # Testing correction factor
 
 
+function example_calibr()
+    A = 1.45
+    B = 0.6
+    n = 0.43
+    king = (A=A, B=B, n=n)
+
+    Tc = 20.0 + 273.15
+    Pc = 101325.0
+    flc = AIR
+
+    Rdec  =  120.0
+    Rtot  =    3.850 # Total probe resistance
+    Rcs   =    0.650 # cable+support resistance
+    Rl    =    0.50  # lead resistance
+    R0    = Rtot - Rcs - Rl  # Sensor cold resistance
+    T0    =  293.15  # Reference temperature
+    br = 1/20  # Bridge ratio
+    ΔR = Rdecade * br - Rtot
+    Rw = R0 + ΔR
+    a = ΔR / R0
+    
+    R = Resistor(R=R0, a=0.45e-2, T=T0)
+    
+    U = [0.3, 0.4, 0.5, 0.7, 1.0, 1.5, 2.0, 3.0, 4.0, 5.0, 7.0, 9.0, 12.0, 15.0, 18.0]
+
+    E = sqrt.(A .+ B .* U.^n)
+    
+    return (E=E, U=U, T=Tc, P=Pc, fluid=Air, R=R, king=king)
+end
+
+
 let
     Pa = 101325.0
     fluid = AIR
