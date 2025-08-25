@@ -1,3 +1,6 @@
+export velocity, velocity!, HultmarkSmits2010
+
+
 abstract type AbstractAnemCalibr end
 
 caltemp(cal::AbstractAnemCalibr) = cal.T
@@ -7,195 +10,224 @@ calwres(cal::AbstractAnemCalibr) = cal.Rw
 calfluid(cal::AbstractAnemCalibr) = cal.fluid
 
 
-function velocity(cal::AbstractAnemCalibr, E; T=caltemp(cal), P=calpress(P),
-                  fluid=calfluid(cal),Tw=calwtemp(cal), Rw=calwres(cal))
-    corr = correct(cal, T=T, P=P, fluid=fluid, Tw=Tw, Rw=Rw)
-    return velocity(cal, E, corr)
-end
+function makecaltable(E::AbstractVector{X}, U::AbstractVector{X}, T, P) where {X}
+    N = length(E)
+    @assert size(E,1) == size(U,1)
 
-function velocity!(U::AbstractArray, cal::AbstractAnemCalibr, E::AbstractArray, corr)
-    for i in eachindex(E)
-        U[i] = velocity(cal, E[i], corr)
-    end
-    return U
-end
+    caltab = zeros(T,N,4)
 
-function velocity!(U::AbstractArray, cal::AbstractAnemCalibr, E::AbstractArray;
-                   T=caltemp(cal), P=calpress(P),
-                   fluid=calfluid(cal),Tw=calwtemp(cal), Rw=calwres(cal))
-    corr = correct(cal, T=T, P=P, fluid=fluid, Tw=Tw, Rw=Rw)
-    for i in eachindex(E)
-        U[i] = velocity(cal, E[i], corr)
-    end
-    return U
-end
+    caltab[:,1] .= E
+    caltab[:,2] .= U
+    caltab[:,3] .= T
+    caltab[:,4] .= P
 
-velocity(cal::AbstractAnemCalibr, E::AbstractArray, corr) = velocity!(similar(E), cal,
-                                                                      E, corr)
-
-
-velocity(cal::AbstractAnemCalibr, E::AbstractArray;
-         T=caltemp(cal), P=calpress(P),
-         fluid=calfluid(cal),Tw=calwtemp(cal), Rw=calwres(cal)) =
-             velocity!(similar(E), cal, E, correct(cal; T=T, P=P, Tw=Tw, Rw=Rw,
-                                                   fluid=fluid))
-
-
-
-struct TempCalibr{T,Fluid,Fit} <: AbstractAnemCalibr
-    "Calibration operating resistance"
-    Rw::T
-    "Calibration operating resistance temperature"
-    Tw::T
-    "Fluid calibration temperature"
-    T::T
-    "Fluid calibration pressure"
-    P::T
-    "Calibration fluid"
-    fluid::Fluid
-    "Calibration curve fit"
-    fit::Fit
-    "Prandtl number exponent in Nusselt"
-    n::T
-    "k.Prⁿ at calibration conditions"
-    phi::T
-    "Calibration kinematic viscosity"
-    nu::T
-end
-
-
-
-struct HultSmits2010{T<:AbstractFloat,Fluid,Fit} <: AbstractAnemCalibr
-    "Calibration operating resistance"
-    Rw::T
-    "Calibration operating resistance temperature"
-    Tw::T
-    "Fluid calibration temperature"
-    T::T
-    "Fluid calibration pressure"
-    P::T
-    "Calibration fluid"
-    fluid::Fluid
-    "Calibration curve fit"
-    fit::Fit
-    "Prandtl number exponent in Nusselt"
-    n::T
-    "k.Prⁿ at calibration conditions"
-    phi::T
-    "Calibration kinematic viscosity"
-    nu::T
-end
-
-#=
-function calcorrect(::Type{HultSmits2010}, E, T, P, Tw, Rw, fluid,
-                    Tc, Pc, Twc, Rwc; n=0.3)
-    Tf   = (Tw + T) / 2
-    ΔTw  = Tw - T
-
-    Pr = prandtl(fluid, Tf, P)
-    k  = heatcond(fluid, Tf, P)
-    nu = kinvisc(fluid, Tf, P)
-    phi = k * Pr^n
-
-    # Reference calibration conditions
-    Tfc   = (Twc + Tc) / 2
-    ΔTwc  = Twc - Tc
-
-    Prc = prandtl(fluid, Tfc, Pc)
-    kc  = heatcond(fluid, Tfc, Pc)
-    nuc = kinvisc(fluid, Tfc, Pc)
-    phic = kc * Prc^n
-=#
+    Tm = mean(T)
+    Pm = mean(P)
     
-   
-    
-
-function HultSmits(R::RT, E::AbstractVector, U::AbstractVector, T, P,
-                   Rw, makefitfun;
-                   Rwc=nothing, Tc=nothing, Pc=nothing,
-                   fluid=AIR, n=0.3) where {RT<:AbstractResistor}
-
-    Tw = temperature.(R, Rw)
-
-    # Default calibration parameters will be the mean parameters during calibration
-    isnothing(Rwc) && Rwc = mean(Tw)  #
-    Twc = temperature(R, Rwc)
-    isnothing(Tc) && Tc = mean(T) #
-    isnothing(Pc) && Pc = mean(P)  
-    
-    # Properties at reference calibration conditions (Rwc, Twc, Pc, Tc)
-    Tfc = (Tc + Twc) / 2
-    Prc = prandtl(fluid, Tfc, Pc)
-    kc  = heatcond(fluid, Tfc, Pc)
-    nuc = kinvisc(fluid, Tfc, Pc)
-    
-    phic = kc * Prc^n
-    ΔTwc = Tw - T
-
-    # Conditions during calibration
-    Tf = 
-    ef = E .^ 2 ./ (phi*Rw*ΔTw)
-    uf = U ./ nu
-    fit = makefitfun(ef, uf)
-    return HultSmits2010(Rw, Tw, T, P, fluid, fit, n, phi, nu)
+    return Tm, Pm, caltab
 end
 
 
-function correct(cal::HultSmits2010; T=caltemp(cal), P=calpress(P),
-                 fluid=calfluid(cal),Tw=calwtemp(cal), Rw=calwres(cal))
-    Tf = (T + Tw) / 2
-
-    k = heatcond(fluid, Tf, P)
-    Pr = prandtl(fluid, Tf, P)
-    phi = k*Pr^cal.n
-    nu = kinvisc(fluid, Tf, P)
-    
-    ef = (cal.phi/phi) * (cal.Rw / Rw) * (cal.Tw - cal.T) / (Tw - T)
-    uf = nu 
-    return (ef, uf)
-end
-
-
-function velocity(cal::HultSmits2010, E, corr)
-    ef = corr[1] * (E*E / (cal.phi * cal.Rw * (cal.Tw - cal.T)))
-    return corr[2] * cal.fit(ef)
-end
-
-
-
-struct HWCalibr{U,RT<:AbstractResistor,Fluid,Fit} <: AbstractAnemCalibr
+struct TempCalibr{X,RT<:AbstractResistor,Fluid,Fit} <: AbstractAnemCalibr
     "Resistance element"
     R::RT
     "Calibration operating resistance"
-    Rw::U
+    Rw::X
     "Calibration operating resistance temperature"
-    Tw::U
+    Tw::X
     "Fluid calibration temperature"
-    T::U
+    T::X
     "Fluid calibration pressure"
-    P::U
+    P::X
     "Calibration fluid"
     fluid::Fluid
+    "Calibration data"
+    data::Matrix{X}
+    "Calibration curve fit"
+    fit::Fit
+end
+
+Base.broadcastable(calibr::AbstractAnemCalibr) = Ref(calibr)
+
+
+function TempCalibr(R::RT,
+                    Ec::AbstractVector,
+                    Uc::AbstractVector,
+                    Tc, Pc, Rwc, makefitfun;
+                    Rw=nothing, T=nothing, P=nothing,
+                    fluid=AIR) where {RT<:AbstractResistor}
+
+    Tm, Pm, caltab = makecaltable(Ec, Uc, Tc, Pc)
+
+    # Reference values
+    if isnothing(T)
+        T = Tm
+    end
+    if isnothing(P)
+        P = Pm
+    end
+    if isnothing(Rw)
+        Rw = mean(Rwc)
+    end
+
+    Twc = temperature.(R, Rwc)
+    
+    Tw = temperature(R, Rw)
+
+    # Correct voltages to conditions Rw, T, P
+    E = sqrt.( Rw./Rwc .* (Tw - T) ./ (Twc .- Tc)  )
+    
+    fit = makefitfun(E, U)
+
+    
+    return TempCalibr(R, Rw, Tw, T, P, fluid, caltab, fit)
+    
+end
+
+function hwcorrect(cal::TempCalibr; T=caltemp(cal), P=calpress(P),
+                   fluid=calfluid(cal),Rw=calwres(cal))
+    
+    Tw = temperature(cal.R, Rw)
+    return sqrt( cal.Rw/Rw * (cal.Tw - cal.T) / (Tw - T) )
+end
+
+    
+function velocity(cal::TempCalibr, E; T=caltemp(cal), P=calpress(P),
+                  fluid=calfluid(cal),Rw=calwres(cal))
+    fcorr = hwcorrect(cal; T=T, P=P, fluid=fluid, Rw=Rw)
+    Ec = fcorr * E
+    return fit(E)
+end
+
+function velocity!(U::AbstractArray, cal::TempCalibr, E::AbstractArray;
+                   T=caltemp(cal), P=calpress(P),
+                   fluid=calfluid(cal),Rw=calwres(cal))
+    @assert size(U) == size(E)
+    fcorr = hwcorrect(cal; T=T, P=P, fluid=flud, Rw=Rw)
+    for i in eachindex(E)
+        U[i] = cal.fit(E[i]  * fcorr)
+    end
+    return U
+        
+end
+
+struct HWCalibr{X<:AbstractFloat,RT<:AbstractResistor,
+                         Fluid,Fit} <: AbstractAnemCalibr
+    "Resistance element"
+    R::RT
+    "Calibration operating resistance"
+    Rw::X
+    "Calibration operating resistance temperature"
+    Tw::X
+    "Fluid calibration temperature"
+    T::X
+    "Fluid calibration pressure"
+    P::X
+    "Calibration fluid"
+    fluid::Fluid
+    "Calibration data"
+    data::Matrix{X}
     "Calibration curve fit"
     fit::Fit
     "Prandtl number exponent in Nusselt"
-    n::U
-    "Reynolds number exponent in Nusselt"
-    m::U
-    "Nondimensional film temperature"
-    theta::U
-    "Calibration (k.Prⁿ)^(1/m) / ν"
-    phi::U
+    n::X
+    "Mean surface temperature factor"
+    theta::X
+    "Calibration kinematic viscosity"
+    nu::X
 end
 
 
-function HWCalibr(E::AbstractVector{X}, U::AbstractVector{X}, makefitfun;
-                  Tw, Rw, T, P, fluid=AIR, m=0.45, n=0.3, theta=0.5) where {X}
+function HWCalibr(R::RT,
+                           Ec::AbstractVector,
+                           Uc::AbstractVector,
+                           Tc, Pc, Rwc, makefitfun; n=0.3, theta=0.5,
+                           Rw=nothing, T=nothing, P=nothing,
+                           fluid=AIR) where {RT<:AbstractResistor}
 
-    ΔTw = Tw - T
-    Tf = T + theta * ΔTw # Film temperature
+    Tm, Pm, caltab = makecaltable(Ec, Uc, Tc, Pc)
+    
+    # Reference values
+    if isnothing(T)
+        T = Tm
+    end
+    if isnothing(P)
+        P = Pm
+    end
+    if isnothing(Rw)
+        Rw = mean(Rwc)
+    end
+    
+    Twc = temperature.(R, Rwc)
+    
+    Tw = temperature(R, Rw)
+    ΔTc = Twc .- Tc
+    ΔT  = Tw - T
+    
+    # Film temperature
+    Tfc = Tc .+ theta .* ΔTc  # Individual calibration points
+    Tf  = T   + theta  * ΔT  # Calibration reference conditions
+    
+    phic   = heatcond.(fluid, Tfc,  Pc) .* prandtl.(fluid, Tfc, Pc) .^ n
 
-    fe = 
+    # Reynolds number
+    nuc = kinvisc.(fluid, Tfc, Pc)
+    nu  = kinvisc(fluid, Tf, Pc)
+    
+    Rec = Uc ./ nuc
+
+    # E²/ϕΔT
+    Ex = Ec .* Ec ./ (phic .* (Twc .- Tc))
+   
+
+    fit = makefitfun(Ex, Rec)
+
+   
+    
+    return HWCalibr(R, Rw, Tw, T, P, fluid, caltab, fit, n, nu)
     
 end
+
+
+
+function velocity(cal::HWCalibr, E; T=caltemp(cal), P=calpress(P),
+                  fluid=calfluid(cal),Rw=calwres(cal))
+
+    Tw = temperature(cal.R, Rw)
+
+    ΔT = Tw - T
+    Tf = T + cal.theta * ΔT
+    
+    k = heatcond(fluid, Tf, P)
+    Pr = prandtl(fluid, Tf, P)
+    phi = k*Pr^cal.n
+
+    nu = kinvisc(fluid, Tf, P)
+    
+    return nu * cal.fit(E*E/(phi * Rw * ΔT))
+end
+
+
+function velocity!(U::AbstractArray, cal::HWCalibr, E::AbstractArray;
+                   T=caltemp(cal), P=calpress(P),
+                   fluid=calfluid(cal),Rw=calwres(cal))
+
+    @assert size(E) == size(U)
+    
+    Tw = temperature(cal.R, Rw)
+    ΔT = Tw - T
+    Tf = T + cal.theta * ΔT
+    k = heatcond(fluid, Tf, P)
+    Pr = prandtl(fluid, Tf, P)
+    den = k*Pr^cal.n * Rw * (Tw - T)
+    
+    nu = kinvisc(fluid, Tf, P)
+
+    for (e,i) in enumerate(E)
+        U[i] = nu * cal.fit(e*e/den)
+    end
+    return U
+end
+
+
 
