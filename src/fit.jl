@@ -507,3 +507,29 @@ Polynomial(1.0000000002601084 - 5.435096137977322e-10*E - 0.9999999995468603*E^2
 """
 make_poly_fitfun(N) = (E,U) -> Polynomials.fit(E, U , N,var=:E)
 
+struct PowerPoly{T}
+    poly::Polynomial{T, :E²}
+    n::T
+end
+Base.broadcastable(fit::PowerPoly) = Ref(fit)
+
+function PowerPoly(E²::AbstractVector{T}, U::AbstractVector{T}; n=0.5, N=5) where {T<:AbstractFloat}
+    Uⁿ = U .^ n
+    p1 = Polynomials.fit(E², Uⁿ, N, var=:E²)
+    
+    return PowerPoly(p1, n)
+end
+
+
+function (fit::PowerPoly{T})(E²) where {T}
+
+    U1 = fit.poly(E²)
+
+    if U1 < 0
+        return zero(T)
+    else
+        return U1 ^ (1/fit.n)
+    end
+end
+
+    

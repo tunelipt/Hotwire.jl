@@ -31,6 +31,7 @@ struct ConstPropFluid{T,U,V,W}
     "Prandtl Number of fluid"
     cp::W
 end
+Base.broadcastable(fluid::ConstPropFluid) = Ref(fluid)
 
 ConstPropFluid(fluid, T, P) = ConstPropFluid(density(fluid, T, P),
                                              viscosity(fluid, T, P),
@@ -87,6 +88,7 @@ struct IdealGas{U,FV,FW,FX}
     mufun::FW
     kfun::FX
 end
+Base.broadcastable(fluid::IdealGas) = Ref(fluid)
 
 
 

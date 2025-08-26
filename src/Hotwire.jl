@@ -2,6 +2,7 @@ module Hotwire
 
 import Polynomials
 import Polynomials: Polynomial
+import Statistics: mean
 
 export Thermistor, Resistor, AbstractResistor, temperature, resistance
 export reftemp, refresist
@@ -9,6 +10,9 @@ export reftemp, refresist
 export ConstPropFluid, heatcond, prandtl, viscosity, kinvisc, density, specheat
 export AIR, HELIUM, NITROGEN, C3H8, OXYGEN, IdealGas, CO2, HYDROGEN
 
+export TempCalibr, HWCalibr 
+
+export AbstractAnemCalibr, calpress, caltemp, calwtemp, calwres, calfluid
 export AbstractAnemCorrect, TempCorrect, WireCorrect, InsulatedCorrect
 export mf58correct, mf52correct
 export correct, tempcorrect
@@ -19,7 +23,7 @@ export CalibrCurve, correctmodel, correction, pressure
 export CTASensor, Wire, resistor, overheatratio, overtemp, gain,caltemp
 export AbstractThermalAnemometer
 export CCASensor, current
-export KingLaw, KingPoly, Polynomial
+export KingLaw, KingPoly, Polynomial, PowerPoly
 export make_king_fitfun, make_kingpoly_fitfun, make_poly_fitfun
 
 export sensor
@@ -46,7 +50,7 @@ include("fluid.jl")
 include("calibr.jl")
 include("ctasensor.jl")
 #include("ccasensor.jl")
-#include("fit.jl")
+include("fit.jl")
 #include("probes.jl")
 #include("probe2d.jl")
 #include("probe3d.jl")
