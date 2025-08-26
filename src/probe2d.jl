@@ -13,18 +13,10 @@ end
 sensor(w::Probe2d) = w.sensor
 sensor(w::Probe2d, i::Integer) = w.sensor[i]
 
-gain(w::Probe2d, i) = gain(w.sensor[i].signal)
-offset(w::Probe2d, i) = offset(w.sensor[i].signal)
-sensorvolt(w::Probe2d, E, i) = sensorvolt(w.sensor[i], E)
-outsignal(w::Probe2d, E, i) = outsignal(w.sensor[i], E)
 
 reftemp(anem::Probe2d) = reftemp(anem.sensor[1])
+reftemp(anem::Probe2d, i::Integer) = reftemp(anem.sensor[i])
 
-function correct(w::Probe2d, E1::Real, E2::Real; kw...)
-    fc1 = correct(sensor(w,1), E1, kw...)
-    fc2 = correct(sensor(w,2), E2, kw...)
-    return CorrFactor((fc1.f, fc2.f), (fc1.nu, fc2.nu))
-end
 
 function vel_aux(w::Probe2d, Uc1::Real, Uc2::Real)
 
@@ -42,64 +34,45 @@ function vel_aux(w::Probe2d, Uc1::Real, Uc2::Real)
 
 end
 
-function velf(w::Probe2d, E1::Real, E2::Real)
-    Uc1 = velf(sensor(w,1),E1)
-    Uc2 = velf(sensor(w,2),E2)
+function vel_aux!(w::Probe2d,
+                  Ux::AbstractArray, Uy::AbstractArray)
+
+    k₁², k₂² = w.k²
+    a = 1 / (2*(1 - k₁²*k₂²))
+    for (i,Uc1,Uc2) in zip(eachindex(Uc1), Ux, Uy)
+        U₁ = sqrt( a * (Uc2^2 * (1 + k₂²) - Uc1^2 * k₂² * (1 + k₁²) ) )
+        U₂ = sqrt( a * (Uc1^2 * (1 + k₁²) - Uc2^2 * k₁² * (1 + k₂²) ) )
+        
+        Ux[i] = 1/sqrt(2) * (U₁ + U₂)
+        Uy[i] = 1/sqrt(2) * (U₁ - U₂)
+        
+    end
+    return nothing
+    
+end
+
+
+function velocity(w::Probe2d, E1::Real, E2::Real; kw...)
+    w1 = sensor(w,1); w2 = sensor(w,2)
+    Uc1 = velocity(w1, E1; kw...)
+    Uc2 = velocity(w2, E2; kw...)
 
     return vel_aux(w, Uc1, Uc2)
 end
 
-function velocity(w::Probe2d, E1::Real, E2::Real, fc::CorrFactor)
+function velocity!(Ux::AbstractArray, Uy::AbstractArray,
+                   w::Probe2d, E1::AbstractArray, E2::AbstractArray;
+                   kw...)
+    @assert size(E1) == size(E2) == size(Ux) == size(Uy)
     w1 = sensor(w,1); w2 = sensor(w,2)
-    E1c = outsignal(w1, sensorvolt(w1, E1)*fc.f[1])
-    E2c = outsignal(w2, sensorvolt(w2, E2)*fc.f[2])
+    velocity!(Ux, w1, E1; kw...)
+    velocity!(Uy, w2, E2; kw...)
+    return vel_aux!(w, Ux, Uy)
+end
+
     
-    rnu = fc.nu[1]/kinvisc(w1) # We will assume the others are the same...
-    Ux,Uy = velf(w, E1c, E2c)
-    return Ux * rnu, Uy*rnu
-end
 
-velocity(w::Probe2d, E::NTuple, fc::CorrFactor) =
-    velocity(w, E[1], E[2], fc)
 
-velocity(w::Probe2d, E1::Real, E2::Real; kw...) = 
-    velocity(w, E1, E2, correct(w, E1, E2; kw...))
-
-velocity(w::Probe2d, E::NTuple; kw...) = 
-    velocity(w, E[1], E[2]; kw...)
-
-function velocity!(U::AbstractMatrix{T}, w::Probe2d,
-                   E::AbstractMatrix{T}, fc::CorrFactor) where {T}
-    @assert size(U,1) == size(E,1)
-    @assert size(U,2) == size(E,2) == 2
-
-    i = firstindex(U)
-    for ee in eachrow(E)
-        ux,uy = velocity(w, ee[1], ee[2], fc)
-        U[i,1] = ux
-        U[i,2] = uy
-        i = i + 1
-    end
-    return U
-end
-function velocity!(U::AbstractMatrix{T}, w::Probe2d,
-                   E::AbstractMatrix{T}; kw...) where {T}
-    Em = mean(E, dims=1)
-    return velocity!(U, w, E, correct(w, Em[1,1], Em[1,2], Em[1,3]; kw...))
-end
-
-velocity(w::Probe2d, E::AbstractMatrix, fc::CorrFactor) =
-    velocity!(zeros(size(x)...), w, E, fc)
-
-velocity(w::Probe2d, E::AbstractMatrix; kw...) =
-    velocity!(zeros(size(x)...), w, E; kw...)
-
-(w::Probe2d)(E1, E2, fc::CorrFactor) = velocity(w, E1, E2, fc)
-(w::Probe2d)(E1, E2; kw...) = velocity(w, E1, E2; kw...)
-(w::Probe2d)(E::NTuple, fc::CorrFactor) = velocity(w, E[1], E[2], fc)
-(w::Probe2d)(E::NTuple; kw...) = velocity(w, E[1], E[2]; kw...)
-(w::Probe2d)(E::AbstractMatrix, fc::CorrFactor) = velocity(w, E, fc)
-(w::Probe2d)(E::AbstractMatrix; kw...) = velocity(w, E; kw...)
 
 
 

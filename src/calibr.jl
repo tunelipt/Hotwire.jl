@@ -1,11 +1,12 @@
 
 abstract type AbstractAnemCalibr end
 
+temperature(cal::AbstractAnemCalibr) = cal.Tw
+pressure(cal::AbstractAnemCalibr) = cal.P
 caltemp(cal::AbstractAnemCalibr) = cal.T
-calpress(cal::AbstractAnemCalibr) = cal.P
-calwtemp(cal::AbstractAnemCalibr) = cal.Tw
-calwres(cal::AbstractAnemCalibr) = cal.Rw
-calfluid(cal::AbstractAnemCalibr) = cal.fluid
+reftemp(cal::AbstractAnemCalibr) = cal.T
+resistance(cal::AbstractAnemCalibr) = cal.Rw
+fluid(cal::AbstractAnemCalibr) = cal.fluid
 
 
 function makecaltable(E::AbstractVector{X}, U::AbstractVector{Y}, T, P) where {X,Y}
@@ -55,7 +56,7 @@ function TempCalibr(R::RT,
                     Tc, Pc, Rwc, makefitfun;
                     Rw=nothing, T=nothing, P=nothing,
                     fluid=AIR) where {RT<:AbstractResistor}
-
+    
     Tm, Pm, caltab = makecaltable(Ec, Uc, Tc, Pc)
 
     # Reference values
@@ -83,8 +84,8 @@ function TempCalibr(R::RT,
     
 end
 
-function hwcorrect(cal::TempCalibr; T=caltemp(cal), P=calpress(cal),
-                   fluid=calfluid(cal),Rw=calwres(cal))
+function hwcorrect(cal::TempCalibr; T=caltemp(cal), P=pressure(cal),
+                   fluid=fluid(cal),Rw=resistance(cal))
     
     Tw = temperature(cal.R, Rw)
     ef = sqrt( cal.Rw/Rw * (cal.Tw - cal.T) / (Tw - T) )
@@ -92,15 +93,15 @@ function hwcorrect(cal::TempCalibr; T=caltemp(cal), P=calpress(cal),
 end
 
     
-function velocity(cal::TempCalibr, E; T=caltemp(cal), P=calpress(cal),
-                  fluid=calfluid(cal),Rw=calwres(cal))
+function velocity(cal::TempCalibr, E; T=caltemp(cal), P=pressure(cal),
+                  fluid=fluid(cal),Rw=resistance(cal))
     fcorr,uf = hwcorrect(cal; T=T, P=P, fluid=fluid, Rw=Rw)
     return uf*cal.fit(fcorr * E)
 end
 
 function velocity!(U::AbstractArray, cal::TempCalibr, E::AbstractArray;
-                   T=caltemp(cal), P=calpress(cal),
-                   fluid=calfluid(cal),Rw=calwres(cal))
+                   T=caltemp(cal), P=pressure(cal),
+                   fluid=fluid(cal),Rw=resistance(cal))
     @assert size(U) == size(E)
     fcorr,uf = hwcorrect(cal; T=T, P=P, fluid=fluid, Rw=Rw)
     for (i,e) in enumerate(E)
@@ -111,8 +112,8 @@ function velocity!(U::AbstractArray, cal::TempCalibr, E::AbstractArray;
 end
 
 velocity(cal::TempCalibr, E::AbstractArray;
-         T=caltemp(cal), P=calpress(cal),
-         fluid=calfluid(cal),Rw=calwres(cal)) = velocity!(similar(E), cal, E; T=T,
+         T=temperature(cal), P=pressure(cal),
+         fluid=fluid(cal),Rw=resistance(cal)) = velocity!(similar(E), cal, E; T=T,
                                                           P=P, fluid=fluid, Rw=Rw)
 
 struct HWCalibr{X<:AbstractFloat,RT<:AbstractResistor,
@@ -194,8 +195,8 @@ function HWCalibr(R::RT,
 end
 
 
-function velocity(cal::HWCalibr, E; T=caltemp(cal), P=calpress(cal),
-                  fluid=calfluid(cal),Rw=calwres(cal))
+function velocity(cal::HWCalibr, E; T=caltemp(cal), P=pressure(cal),
+                  fluid=fluid(cal),Rw=resistance(cal))
     
     Tw = temperature(cal.R, Rw)
 
@@ -214,8 +215,8 @@ end
 
 
 function velocity!(U::AbstractArray, cal::HWCalibr, E::AbstractArray;
-                   T=caltemp(cal), P=calpress(cal),
-                   fluid=calfluid(cal),Rw=calwres(cal))
+                   T=caltemp(cal), P=pressure(cal),
+                   fluid=fluid(cal),Rw=resistance(cal))
 
     @assert size(E) == size(U)
     
@@ -228,7 +229,7 @@ function velocity!(U::AbstractArray, cal::HWCalibr, E::AbstractArray;
     
     nu = kinvisc(fluid, Tf, P)
 
-    for (e,i) in enumerate(E)
+    for (i,e) in enumerate(E)
         U[i] = nu * cal.fit(e*e/den)
     end
     return U
@@ -236,7 +237,7 @@ end
 
 
 velocity(cal::HWCalibr, E::AbstractArray;
-         T=caltemp(cal), P=calpress(cal),
-         fluid=calfluid(cal),Rw=calwres(cal)) = velocity!(similar(E), cal, E; T=T,
-                                                          P=P, fluid=fluid, Rw=Rw)
+         T=caltemp(cal), P=pressure(cal),
+         fluid=fluid(cal),Rw=resistance(cal)) = velocity!(similar(E), cal, E; T=T,
+                                                             P=P, fluid=fluid, Rw=Rw)
 

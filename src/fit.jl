@@ -193,8 +193,6 @@ power law exponent `n` is less than the maximum convergence error `err`.
 The maximum number of iterations is given by keyword parameter `maxiter`.
 If convergence fails, an error is thrown.
 
-The function [`makekingfitfun`](@ref) returns an anonymous function that has two
-arguments `E` and `U` that can be used to fit the data.
 
 A more general and often more accurate fit function is implemented
 in [`KingPoly`](@ref).
@@ -226,7 +224,13 @@ function KingLaw(E::AbstractVector{T}, U::AbstractVector{T}, n) where {T}
 end
 
 function KingLaw(E::AbstractVector{T}, U::AbstractVector{T};
-                 n0=one(T)/2, err=1e-8, maxiter=200, r=1.0) where {T}
+                 n=one(T)/2, fixed=false, err=1e-8, maxiter=200, r=1.0) where {T}
+    if fixed
+        return KingLaw(E, U, n)
+    else
+        n0 = n
+    end
+    
     M = length(E)
     @assert length(U) == M  "E and U should have the same length"
 
@@ -334,7 +338,7 @@ julia> E = sqrt.(2.0 .+ 2.0 * sqrt.(U1));
 
 julia> U = (-1.0 .+ 0.5*E.^2).^2;
 
-julia> KingPoly(E,U,0.5,N=1)
+julia> KingPoly(E,U, n=0.5,N=1)
 KingPoly{Float64}(Polynomial(-0.9999999999999994 + 0.5*E²), 0.5)
 
 julia> KingPoly(E,U,N=1,n0=0.4)
@@ -345,7 +349,7 @@ KingPoly{Float64}(Polynomial(-1.0000000000000018 + 0.49999999999998945*E² + 3.1
 
 ```
 """
-function KingPoly(E::AbstractVector{T}, U::AbstractVector{T}, n::T; N=5) where {T}
+function KingPoly(E::AbstractVector{T}, U::AbstractVector{T}, n, N) where {T}
 
     Ur = U .^ n
     E2 = E .^ 2
@@ -361,8 +365,14 @@ function KingPoly(E::AbstractVector{T}, U::AbstractVector{T}, n::T; N=5) where {
 end
 
 function KingPoly(E::AbstractVector{T}, U::AbstractVector{T};
-                  N=5, n0=one(T)/2, err=sqrt(eps(T)), maxiter=200, r=one(T)) where {T}
-
+                  N=5, n=one(T)/2, fixed=true, err=sqrt(eps(T)),
+                  maxiter=200, r=one(T)) where {T}
+    if fixed
+        return KingPoly(E, U, n, N)
+    else
+        n0 = n
+    end
+    
     M = length(E)
     @assert length(U) == M  "E and U should have the same length"
 
@@ -454,58 +464,6 @@ makekingfitfun(;n0=0.45, err=1e-8, maxiter=200, r=1.0) =
 makekingfitfun(n) = (E,U) -> KingLaw(E,U,n)
 
 
-"""
- * `make_kingpoly_fitfun(N=5)`
- * `make_kingpoly_fitfun(n, N=5)`
-
-This is a helper function that returns an anonymous function that is able to fit
-calibration data to a modified King's Law, see [`KingLaw`](@ref).
-
-When used without positional arguments, it uses nonlinear least squares iteration.
-If positional argument `n` is provided, the power law exponent `n` is fixed.
-
-## Examples
-
-```@example
-julia> U = 1.0:0.2:5.0; E = sqrt.(2.0 .+ 2.0 * sqrt.(U));
-
-julia> f = make_kingpoly_fitfun(0.5, N=1)
-#42 (generic function with 1 method)
-
-julia> f(E,U)
-KingPoly{Float64}(Polynomial(-0.9999999999999994 + 0.5*E²), 0.5)
-
-julia> f = make_kingpoly_fitfun(n0=0.4, N=5)
-#39 (generic function with 1 method)
-
-julia> f(E,U)
-KingPoly{Float64}(Polynomial(-1.0000000000747002 + 0.5000000000839081*E² - 2.7206927950106985e-11*E²^2 + 3.720669121046541e-12*E²^3 - 2.8588084742629384e-13*E²^4 + 9.220384116667572e-15*E²^5), 0.49999999998346645)
-```
-"""
-makekingpolyfitfun(;N=5, n0=0.45, err=1e-8, maxiter=200, r=1.0) =
-    (E,U) -> KingPoly(E,U, N=N, n0=n0, err=err, maxiter=maxiter, r=r)
-makekingpolyfitfun(n; N=5) = (E,U) -> KingPoly(E,U, n, N=N)
-
-
-"""
-     `makepolyfitfun(N)`
-
-This is a helper function that returns an anonymous function that is able to fit
-calibration data to polynomial of degree `N`. The curve fitting itself is carried out by  the method `fit`, `Polynomials.fit` in package `Polynomials`.
-
-## Examples
-
-```@example
-julia> U = 1.0:0.2:5.0; E = sqrt.(2.0 .+ 2.0 * sqrt.(U));
-
-julia> f = make_poly_fitfun(5)
-#48 (generic function with 1 method)
-
-julia> f(E,U)
-Polynomial(1.0000000002601084 - 5.435096137977322e-10*E - 0.9999999995468603*E^2 - 1.8843148505531053e-10*E^3 + 0.25000000003908324*E^4 - 3.2348242008439195e-12*E^5)
-```
-"""
-make_poly_fitfun(N) = (E,U) -> Polynomials.fit(E, U , N,var=:E)
 
 struct PowerPoly{T}
     poly::Polynomial{T, :E²}

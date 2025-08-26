@@ -33,11 +33,6 @@ Base.broadcastable(sensor::CTASensor) = Ref(sensor)
 
 CTASensor(calibr) = CTASensor(calibr.R, calibr.Rw, calibr.Tw, calibr)
 
-function CTASensor(calibrfun, R::RT, Rw, Ec, Uc, Tc, Pc, makefitfun;
-                   T=nothing, P=nothing, fluid=AIR, kw...) where {RT<:AbstractResistor}
-    calibr = calibrfun(R, Ec, Uc, Tc, Pc, Rw, makefitfun; kw...)
-    return CTASensor(calibr)
-end
 
 resistor(w::AbstractCTA) = w.R
 
@@ -68,21 +63,11 @@ kinvisc(w::CTASensor) = kinvisc(w.calibr)
 
 
 
-
-function velocity(w::CTASensor, E::Real;
-                 T=caltemp(w), P=pressure(w),
-                  fluid=fluid(w), Rw=resistance(w))
-    
-    return velocity(w.calibr, E; T=T, P=P, fluid=fluid, Rw=Rw)
-end
+velocity(w::CTASensor, E; kw...) = velocity(w.calibr, E; kw...)
 
 
-function velocity!(U::AbstractArray, w::CTASensor, E::AbstractArray;
-                   T=caltemp(w), P=pressure(w),
-                   fluid=fluid(w), Rw=resistance(w))
-    
-    return velocity!(U, w.calibr, E; T=T, P=P, fluid=fluid, Rw=Rw)
-end
+velocity!(U::AbstractArray, w::CTASensor, E::AbstractArray; kw...) =
+    velocity!(U, w.calibr, E; kw...)
 
 velocity(w::CTASensor, E::AbstractArray;
          T=caltemp(w), P=pressure(w),

@@ -188,6 +188,16 @@ let
                        cal.nu/kinvisc(fluid2, cal.T, cal.P))
 
     
+    N = length(X.E)
+    Ta = 293.15 + 10.0
+    U1 = velocity.(cal, X.E; T=Ta)
+    U2 = velocity(cal, X.E; T=Ta)
+    U3 = zeros(N)
+    velocity!(U3, cal, X.E; T=Ta)
+
+    @test all(U1 .== U2)
+    @test all(U1 .== U3)
+    @test all(U2 .== U3)
 
 
     # Now we change k,Pr and keep nu constant

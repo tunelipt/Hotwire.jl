@@ -17,7 +17,7 @@ end
 Base.broadcastable(sensor::Probe1d) = Ref(sensor)
 
 """
-    `Probe1d(sensor, cal, setup)`
+    `Probe1d(sensor, setup)`
 
 Creates a 1d probe. This completely characterizes a 1d probe. It includes
 information on calibration, bridge configuration, output filter, etc.
@@ -25,17 +25,13 @@ information on calibration, bridge configuration, output filter, etc.
 # Arguments:
 
  - `sensor`: an `AbstractThermalAnemometer` object
- - `cal`: `CalibrCurve` object
+ - `setup`: Configuration of the system
 
 """
 
 resistor(w::Probe1d) = resistor(w.sensor)
 sensor(w::Probe1d) = w.sensor
 
-gain(w::Probe1d) = gain(w.sensor.signal)
-offset(w::Probe1d) = offset(w.sensor.signal)
-sensorvolt(w::Probe1d, E) = sensorvolt(w.sensor, E)
-outsignal(w::Probe1d, E) = outsignal(w.sensor, E)
 
 reftemp(w::Probe1d) = reftemp(w.sensor)
 caltemp(w::Probe1d) = caltemp(w.sensor)
@@ -61,12 +57,9 @@ current(w::Probe1d{<:AbstractCCA}) = current(w.sensor)
 
 correct(w::Probe1d, E::Real; kw...) = correct(sensor(w), E; kw...)
 
-velf(w::Probe1d, E) = velf(sensor(w),E)
 
 
 velocity(w::Probe1d, E; kw...) = velocity(sensor(w), E; kw...)
-velocity(w::Probe1d, E, fc::CorrFactor) =
-    velocity(sensor(w), E, fc)
 
 velocity!(U::AbstractVector, w::Probe1d, E::AbstractVector; kw...) =
     velocity!(U, sensor(w), E; kw...)
@@ -74,7 +67,5 @@ velocity(w::Probe1d, E::AbstractVector; kw...) = velocity(sensor(w), E; kw...)
 
 
 (w::Probe1d)(E; kw...) = velocity(sensor(w), E; kw...)
-(w::Probe1d)(E, fc::CorrFactor) =
-    velocity(sensor(w), E, fc)
 
 
