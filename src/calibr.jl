@@ -182,7 +182,7 @@ function HWCalibr(R::RT,
     Rec = Uc ./ nuc
 
     # E²/ϕΔT
-    Ex = Ec .* Ec ./ (phic .* (Twc .- Tc))
+    Ex = Ec .* Ec ./ (phic .* Rw * (Twc .- Tc))
    
 
     fit = makefitfun(Ex, Rec)
