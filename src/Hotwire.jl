@@ -48,7 +48,5 @@ include("fit.jl")
 include("probes.jl")
 include("probe2d.jl")
 include("probe3d.jl")
-#include("hardware.jl")
-#include("dantec.jl")
 
 end # module
