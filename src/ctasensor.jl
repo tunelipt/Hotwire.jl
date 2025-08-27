@@ -31,6 +31,16 @@ struct CTASensor{U,RT,Calibr} <: AbstractCTA
 end
 Base.broadcastable(sensor::CTASensor) = Ref(sensor)
 
+function CTASensor(model::Calibr, R::RT, Rw, E::AbstractArray, U::AbstractArray,
+                   T, P, makefitfun;
+                   fluid=AIR, params...) where {RT<:AbstractResistor,
+                                                Calibr<:AbstractAnemCalibr}
+    
+    calibr = model(R, E, U, T, P, Rw, makefitfun; fluid=fluid, params...)
+    Tw = temperature(R, Rw)
+    return CTASensor(R, Rw, Tw, calibr) 
+end
+
 CTASensor(calibr) = CTASensor(calibr.R, calibr.Rw, calibr.Tw, calibr)
 
 
@@ -59,7 +69,6 @@ overtemp(w::AbstractCTA) = temperature(w) - reftemp(w)
 fluid(w::CTASensor) = fluid(w.calibr)
 pressure(w::CTASensor) = pressure(w.calibr)
 caltemp(w::CTASensor) = reftemp(w.calibr)
-kinvisc(w::CTASensor) = kinvisc(w.calibr)
 
 
 

@@ -24,11 +24,22 @@ struct CCASensor{Calibr,U,RT,Fit} <: AbstractCCA
     "Voltage output gain"
     gain::U
     "Calibration and correction model"
-    corr::Calibr
+    calibr::Calibr
 end
 Base.broadcastable(sensor::CCASensor) = Ref(sensor)
 
+function CCASensor(model::Calibr, R::RT, I, gain, E::AbstractArray, U::AbstractArray,
+                   T, P, makefitfun;
+                   fluid=AIR, params...) where {RT<:AbstractResistor,
+                                                Calibr<:AbstractAnemCalibr}
 
+    Ew = E ./ gain  # Voltage on the sensor element itself
+    Rwc = Ew ./  I  # Sensor resistance
+    calibr = model(R, Ew, U, T, P, Rwc, makefitfun; fluid=fluid, params...)
+    # Now create the actual object
+    return CCASensor(R, I, gain, calibr)
+
+end
 resistor(w::AbstractCCA) = w.R
 
 "Operating current of the CTA"
@@ -39,46 +50,32 @@ refresist(w::CCASensor) = refresist(w.R)
 
 gain(w::AbstractCCA) = w.gain
 
-fluid(w::CCASensor) = fluid(w.corr)
-pressure(w::CCASensor) = pressure(w.corr)
-caltemp(w::CCASensor) = reftemp(w.corr)
+fluid(w::CCASensor) = fluid(w.calibr)
+pressure(w::CCASensor) = pressure(w.calibr)
+caltemp(w::CCASensor) = reftemp(w.calibr)
  
-
-function correct(w::CCASensor, E;
-                 T=caltemp(w), P=pressure(w),
-                 fluid=fluid(w), I=current(w))
-    g = gain(w)
-    Ew = E / g # Voltage passing through the resistor
-    Rw = Ew / I # Resistance of the sensor
-    Tw = temperature(resistor(w), Rw)
-    
-    return correct(Ew, w.corr, T, P, fluid, Rw, Tw)
-        
-end
-
-#velocity(w::CCASensor, E) = w.fit(E)
-    
 function velocity(w::CCASensor, E;
                   T=caltemp(w), P=pressure(w),
                   fluid=fluid(w), I=current(w))
     g = gain(w)
     Ew = E / g # Voltage passing through the resistor
     Rw = Ew / I # Resistance of the sensor
-    Tw = temperature(resistor(w), Rw)
-    
-    (fc,ν) = correct(Ew, w.corr, T, P, fluid, Rw, Tw)
-    Uc = w.fit(E*fc)
-    ν_cal = kinvisc(w.corr)
-    return ν / ν_cal * Uc
-    
-end
-    
-function velocity(w::CCASensor, E, fc::CorrFactor)
-    ν_cal = kinvisc(w.corr)
-    Uc = w.fit(E*fc.f)
-    return fc.nu/ν_cal * Uc
+    return velocity(w.calibr, E; T=T, P=P, fluid=fluid, I=I)
+        
 end
 
+function velocity!(U::AbstractArray, w::CCASensor, E::AbstractArray;
+                   T=caltemp(w), P=pressure(w),
+                   fluid=fluid(w), I=current(w))
+    U .= velocity.(w, E; T=T, P=P, fluid=fluid, I=I)
+    return U
+end
+
+velocity(w::CCASensor, E::AbstractArray;
+         T=caltemp(w), P=pressure(w),
+         fluid=fluid(w), I=current(w)) =
+             velocity!(similar(E), w, E, T=T, P=P, fluid=fluid, I=I)
+
+                    
+
 (w::CCASensor)(args...; kw...) = velocity(w, args...; kw...)
-(w::CCASensor)(E::Real, fc::CorrFactor) = velocity(w, fc)
-#(w::CCASensor)(E::Real)  = velocity(w, E) 
