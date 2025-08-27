@@ -128,6 +128,7 @@ velocity(w::Probe3d, E1::AbstractArray, E2::AbstractArray, E3::AbstractArray;
                             w, E1, E2, E3; kw...)
 
                    
+(probe::Probe3d)(E1, E2, E3; kw...) = velocity(probe, E1, E2, E3; kw...)
 
 
 """
