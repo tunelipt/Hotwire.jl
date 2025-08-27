@@ -5,7 +5,7 @@ import Polynomials: Polynomial
 import Statistics: mean
 
 export Thermistor, Resistor, AbstractResistor, temperature, resistance
-export reftemp, refresist
+export reftemp, refresist, pressure, fluid
 
 export ConstPropFluid, heatcond, prandtl, viscosity, kinvisc, density, specheat
 export AIR, HELIUM, NITROGEN, C3H8, OXYGEN, IdealGas, CO2, HYDROGEN
@@ -13,12 +13,6 @@ export AIR, HELIUM, NITROGEN, C3H8, OXYGEN, IdealGas, CO2, HYDROGEN
 export TempCalibr, HWCalibr 
 
 export AbstractAnemCalibr, calpress, caltemp, calwtemp, calwres, calfluid
-export AbstractAnemCorrect, TempCorrect, WireCorrect, InsulatedCorrect
-export mf58correct, mf52correct
-export correct, tempcorrect
-export CorrFactor, corrfactor, voltage, sensorvolt, outsignal, linsignal
-
-export CalibrCurve, correctmodel, correction, pressure
 
 export CTASensor, Wire, resistor, overheatratio, overtemp, gain,caltemp
 export AbstractThermalAnemometer

@@ -23,7 +23,7 @@ end
     include("test_fluid.jl")
     include("test_calibr.jl")
     include("test_cta.jl")
-    #include("test_probe2d.jl")
+    include("test_probe2d.jl")
     #include("test_probe3d.jl")
     
     

@@ -30,8 +30,8 @@ let D=5e-6, L=2e-3
     Rw = R(Tw)
 
     calibr = TempCalibr(R, E, U, Ta, Pa, Rw, KingLaw; fluid=AIRconst)
-    
-    w =  CTASensor(calibr) #R, Rw, Tw, signal, corr, fit)
+
+    w = CTASensor(TempCalibr, R, Rw, E, U, Ta, Pa, KingLaw; fluid=AIRconst)
     @test temperature(w) == Tw
     @test resistance(w) == Rw
     @test caltemp(w) == Ta

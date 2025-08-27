@@ -31,10 +31,10 @@ struct CTASensor{U,RT,Calibr} <: AbstractCTA
 end
 Base.broadcastable(sensor::CTASensor) = Ref(sensor)
 
-function CTASensor(model::Calibr, R::RT, Rw, E::AbstractArray, U::AbstractArray,
+function CTASensor(model, R::RT, Rw, E::AbstractArray, U::AbstractArray,
                    T, P, makefitfun;
-                   fluid=AIR, params...) where {RT<:AbstractResistor,
-                                                Calibr<:AbstractAnemCalibr}
+                   fluid=AIR, params...) where {RT<:AbstractResistor}
+    
     
     calibr = model(R, E, U, T, P, Rw, makefitfun; fluid=fluid, params...)
     Tw = temperature(R, Rw)

@@ -11,35 +11,34 @@ let
     Tw = 273.15 + 240.0
     Rw = R(Tw)
 
-    corr = TempCorrect(Ta, Pa, AIRconst, Rw, Tw)
-    signal = linsignal(1, 0)
-    wire1 = CTASensor(R, Rw, Tw, signal, corr, E->E)
-    wire2 = CTASensor(R, Rw, Tw, signal, corr, E->E)
+    wire1 = CTASensor(TempCalibr, R, Rw, E, E, Ta, Pa, (E,U)->(x->x);
+                      fluid=AIRconst)
+    wire2 = CTASensor(TempCalibr, R, Rw, E, E, Ta, Pa, (E,U)->(x->x);
+                      fluid=AIRconst)
     
-
+    
     probe = Probe2d((wire1, wire2), (0.0, 0.0), "")
 
     Ux0 = 2.0; Uy0 = 0.0
     Uc1 = (Ux0 - Uy0)
     Uc2 = (Ux0 + Uy0)
-    fc = CorrFactor((1.0, 1.0), (kinvisc(corr), kinvisc(corr)), (1.0, 1.0))
 
     # E1 = Uc1, E2 = Uc2 - simplifiying...
-    Ux, Uy = velocity(probe, Uc1, Uc2, fc)
+    Ux, Uy = velocity(probe, Uc1, Uc2)
     @test Ux ≈ Ux0
     @test Uy ≈ Uy0 atol=1e-5
 
     Ux0 = 2.0; Uy0 = 1.0
     Uc1 = (Ux0 - Uy0)
     Uc2 = (Ux0 + Uy0)
-    Ux, Uy = velocity(probe, Uc1, Uc2, fc)
+    Ux, Uy = velocity(probe, Uc1, Uc2)
     @test Ux ≈ Ux0
     @test Uy ≈ Uy0
 
     Ux0 = 2.0; Uy0 = -1.0
     Uc1 = (Ux0 - Uy0)
     Uc2 = (Ux0 + Uy0)
-    Ux, Uy = velocity(probe, Uc1, Uc2, fc)
+    Ux, Uy = velocity(probe, Uc1, Uc2)
     @test Ux ≈ Ux0
     @test Uy ≈ Uy0
 
@@ -53,7 +52,7 @@ let
     Ue2 = sqrt(   U1^2 + k2*U2^2)
     Uc1 = sqrt( 2*Ue1^2 / (1 + k1))
     Uc2 = sqrt( 2*Ue2^2 / (1 + k2))
-    Ux, Uy = velocity(probe, Uc1, Uc2, fc)
+    Ux, Uy = velocity(probe, Uc1, Uc2)
     @test Ux ≈ Ux0
     @test Uy ≈ Uy0 atol=1e-5
 
@@ -64,7 +63,7 @@ let
     Ue2 = sqrt(   U1^2 + k2*U2^2)
     Uc1 = sqrt( 2*Ue1^2 / (1 + k1))
     Uc2 = sqrt( 2*Ue2^2 / (1 + k2))
-    Ux, Uy = velocity(probe, Uc1, Uc2, fc)
+    Ux, Uy = velocity(probe, Uc1, Uc2)
     @test Ux ≈ Ux0
     @test Uy ≈ Uy0 
 
@@ -75,7 +74,7 @@ let
     Ue2 = sqrt(   U1^2 + k2*U2^2)
     Uc1 = sqrt( 2*Ue1^2 / (1 + k1))
     Uc2 = sqrt( 2*Ue2^2 / (1 + k2))
-    Ux, Uy = velocity(probe, Uc1, Uc2, fc)
+    Ux, Uy = velocity(probe, Uc1, Uc2)
     @test Ux ≈ Ux0
     @test Uy ≈ Uy0 
     
@@ -90,7 +89,7 @@ let
     Ue2 = sqrt(   U1^2 + k2*U2^2)
     Uc1 = sqrt( 2*Ue1^2 / (1 + k1))
     Uc2 = sqrt( 2*Ue2^2 / (1 + k2))
-    Ux, Uy = velocity(probe, Uc1, Uc2, fc)
+    Ux, Uy = velocity(probe, Uc1, Uc2)
     @test Ux ≈ Ux0
     @test Uy ≈ Uy0 atol=1e-5
 
@@ -101,7 +100,7 @@ let
     Ue2 = sqrt(   U1^2 + k2*U2^2)
     Uc1 = sqrt( 2*Ue1^2 / (1 + k1))
     Uc2 = sqrt( 2*Ue2^2 / (1 + k2))
-    Ux, Uy = velocity(probe, Uc1, Uc2, fc)
+    Ux, Uy = velocity(probe, Uc1, Uc2)
     @test Ux ≈ Ux0
     @test Uy ≈ Uy0 
 
@@ -112,7 +111,7 @@ let
     Ue2 = sqrt(   U1^2 + k2*U2^2)
     Uc1 = sqrt( 2*Ue1^2 / (1 + k1))
     Uc2 = sqrt( 2*Ue2^2 / (1 + k2))
-    Ux, Uy = velocity(probe, Uc1, Uc2, fc)
+    Ux, Uy = velocity(probe, Uc1, Uc2)
     @test Ux ≈ Ux0
     @test Uy ≈ Uy0 
     

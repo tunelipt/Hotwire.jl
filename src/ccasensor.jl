@@ -28,10 +28,9 @@ struct CCASensor{Calibr,U,RT,Fit} <: AbstractCCA
 end
 Base.broadcastable(sensor::CCASensor) = Ref(sensor)
 
-function CCASensor(model::Calibr, R::RT, I, gain, E::AbstractArray, U::AbstractArray,
+function CCASensor(model, R::RT, I, gain, E::AbstractArray, U::AbstractArray,
                    T, P, makefitfun;
-                   fluid=AIR, params...) where {RT<:AbstractResistor,
-                                                Calibr<:AbstractAnemCalibr}
+                   fluid=AIR, params...) where {RT<:AbstractResistor}
 
     Ew = E ./ gain  # Voltage on the sensor element itself
     Rwc = Ew ./  I  # Sensor resistance
