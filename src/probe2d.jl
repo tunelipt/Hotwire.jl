@@ -70,6 +70,7 @@ end
 
     
 
+(probe::Probe2d)(E1, E2; kw...) = velocity(probe, E1, E2; kw...)
 
 
 

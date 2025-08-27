@@ -67,6 +67,10 @@ let
     @test Ux ≈ Ux0
     @test Uy ≈ Uy0 
 
+    Ux, Uy = probe(Uc1, Uc2)
+    @test Ux ≈ Ux0
+    @test Uy ≈ Uy0 
+
     Ux0 = 2.0; Uy0 = -1.0
     U1 = sqrt(2)/2 * (Ux0 + Uy0)
     U2 = sqrt(2)/2 * (Ux0 - Uy0)
