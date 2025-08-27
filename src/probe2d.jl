@@ -14,8 +14,6 @@ sensor(w::Probe2d) = w.sensor
 sensor(w::Probe2d, i::Integer) = w.sensor[i]
 
 
-reftemp(anem::Probe2d) = reftemp(anem.sensor[1])
-reftemp(anem::Probe2d, i::Integer) = reftemp(anem.sensor[i])
 
 
 function vel_aux(w::Probe2d, Uc1::Real, Uc2::Real)
@@ -67,7 +65,7 @@ function velocity!(Ux::AbstractArray, Uy::AbstractArray,
     w1 = sensor(w,1); w2 = sensor(w,2)
     velocity!(Ux, w1, E1; kw...)
     velocity!(Uy, w2, E2; kw...)
-    return vel_aux!(w, Ux, Uy)
+    return Ux, Uy 
 end
 
     
