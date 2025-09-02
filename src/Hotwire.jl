@@ -27,16 +27,18 @@ export Probe1d, Probe2d, Probe3d
 export velocity, velocity!, velf, velf!
 export dircalibr
 
-
+"Abstract type for thermal anemometers"
 abstract type AbstractThermalAnemometer end
+
+"Abstract type for (C)onstant (T)emperature (A)nemometers"
 abstract type AbstractCTA <: AbstractThermalAnemometer end
+
+"Abstract type for (C)onstant (C)urrent (A)nemometer"
 abstract type AbstractCCA <: AbstractThermalAnemometer end
 
 "Resistor element of a thermal anemometer sensor"
 resistor(w::AbstractThermalAnemometer) = w.R
 
-"Gain of anemometer output"
-gain(w::AbstractThermalAnemometer) = w.gain
 
 
 include("resistor.jl")
