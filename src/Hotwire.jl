@@ -27,7 +27,7 @@ export Probe1d, Probe2d, Probe3d
 export velocity, velocity!, velf, velf!
 export dircalibr
 
-"Abstract type for thermal anemometers"
+"Abstract type for thermal anemometers that operate with self-heated resistors"
 abstract type AbstractThermalAnemometer end
 
 "Abstract type for (C)onstant (T)emperature (A)nemometers"
