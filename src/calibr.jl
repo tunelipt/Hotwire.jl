@@ -406,23 +406,17 @@ function HWCalibr(R::RT,
     # Film temperature
     Tfc = Tc .+ theta .* ΔTc  # Individual calibration points
     Tf  = T   + theta  * ΔT  # Calibration reference conditions
-    
     phic   = heatcond.(fluid, Tfc,  Pc) .* prandtl.(fluid, Tfc, Pc) .^ n
 
     # Reynolds number
     nuc = kinvisc.(fluid, Tfc, Pc)
-    nu  = kinvisc(fluid, Tf, Pc)
-    
+    nu  = kinvisc(fluid, Tf, P)
     Rec = Uc ./ nuc
 
     # E²/ϕΔT
-    Ex = Ec .* Ec ./ (phic .* Rw * (Twc .- Tc))
-   
+    Ex = Ec .* Ec ./ (phic .* Rw .* (Twc .- Tc))
 
     fit = makefitfun(Ex, Rec)
-
-    
-    
     return HWCalibr(R, Rw, Tw, T, P, fluid, caltab, fit, n, theta, nu)
     
 end

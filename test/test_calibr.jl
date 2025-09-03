@@ -109,6 +109,7 @@ let
 end
 
 
+
 # Now we will test HWCalibr - using Constant properties!
 let
     n = 0.3
@@ -125,9 +126,19 @@ let
     # it should be identical to TempCalibr
     calt = TempCalibr(X.R, X.E, X.U, X.T, X.P, X.Rw, KingLaw; fluid=fluid)
     Tw = temperature(X.R, X.Rw)
-        
+
+    oo = ones(length(X.U))
+    calt_nt = TempCalibr(X.R, X.E, X.U, oo .* X.T, oo .* X.P,
+                         X.Rw, KingLaw; fluid=fluid)
+    
+
     cal = HWCalibr(X.R, X.E, X.U, X.T, X.P, X.Rw, (E²,U)->PowerPoly(E²,U;n=fit.n,N=1);
                    fluid=fluid, n=n, theta=theta)
+    cal_nt = HWCalibr(X.R, X.E, X.U, oo .* X.T, oo .* X.P, X.Rw,
+                      (E²,U)->PowerPoly(E²,U;n=fit.n,N=1);
+                      fluid=fluid, n=n, theta=theta)
+    
+
     k = heatcond(fluid, cal.T, cal.P)
     Pr = prandtl(fluid, cal.T, cal.P)
     ΔT = cal.Tw - cal.T
@@ -152,6 +163,9 @@ let
     # Test the corrections
     Em = mean(X.E) # Average voltage
     @test isapprox(velocity(calt, Em), velocity(cal, Em))
+    @test isapprox(velocity(calt_nt, Em), velocity(calt, Em))
+    @test isapprox(velocity(cal, Em), velocity(cal_nt, Em))
+
     @test isapprox(velocity(calt, Em; T=X.T+10), velocity(cal, Em ; T=X.T+10))
     f = 1.1
     @test isapprox(velocity(calt, Em; T=X.T+10, Rw=f*X.Rw),
