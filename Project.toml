@@ -1,7 +1,7 @@
 name = "Hotwire"
 uuid = "d5de4fbe-640e-469d-b7ad-3c69fc3f3f61"
 authors = ["Paulo Jabardo", "IPT"]
-version = "0.1.0"
+version = "0.1.1"
 
 [deps]
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
