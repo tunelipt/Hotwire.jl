@@ -43,6 +43,7 @@ resistor(w::AbstractThermalAnemometer) = w.R
 
 include("resistor.jl")
 include("fluid.jl")
+include("coolprop.jl")
 include("calibr.jl")
 include("ctasensor.jl")
 include("ccasensor.jl")

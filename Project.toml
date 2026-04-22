@@ -1,16 +1,20 @@
 name = "Hotwire"
 uuid = "d5de4fbe-640e-469d-b7ad-3c69fc3f3f61"
-authors = ["Paulo Jabardo", "IPT"]
 version = "0.1.1"
+authors = ["Paulo Jabardo", "IPT"]
 
 [deps]
+CoolProp = "e084ae63-2819-5025-826e-f8e611a84251"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 Polynomials = "f27b6e38-b328-58d1-80ce-0feddd5e7a45"
 StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
+TOML = "fa267f1f-6049-4f14-aa54-33bafae1ed76"
 
 [compat]
+CoolProp = "0.2.2"
 StaticArrays = "1.9.14"
+TOML = "1.0.3"
 julia = "1"
 
 [extras]
