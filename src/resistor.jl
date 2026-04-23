@@ -52,13 +52,13 @@ julia> temperature(R, 2000)
 
 ```
 """
-struct Resistor{T,U,V} <: AbstractResistor
+struct Resistor{T} <: AbstractResistor
     "Resistance at reference temperature (Ω)"
     R₀::T
     "Linear resistance coefficient"
-    α::U
+    α::T
     "Reference temperature (K)"
-    T₀::V
+    T₀::T
 end
 Base.broadcastable(R::Resistor) = Ref(R)
 
@@ -110,13 +110,13 @@ julia> temperature(R, 4163.588)
 ```
 
 """
-struct Thermistor{T,U,V} <: AbstractResistor
+struct Thermistor{T} <: AbstractResistor
     "Reference resistance in Ω at temperature `T₀`"
     R₀::T
     "Thermistor's B coefficient in K "
-    B::U
+    B::T
     "Reference temperature in K"
-    T₀::V
+    T₀::T
 end
 Base.broadcastable(R::Thermistor) = Ref(R)
 

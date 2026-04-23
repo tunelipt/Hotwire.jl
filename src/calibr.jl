@@ -1,4 +1,3 @@
-using FillArrays
 """
 Abstract type for handling calibrations and corrections
 
@@ -90,12 +89,15 @@ abstract type AbstractAnemCalibr end
 
 "Calibration pressure"
 pressure(cal::AbstractAnemCalibr) = cal.P
+calpress(cal::AbstractAnemCalibr) = cal.P
 
 "Calibration temperature"
 temperature(cal::AbstractAnemCalibr) = cal.T
+caltemp(cal::AbstractAnemCalibr) = cal.T
 
 "Calibration fluid"
 fluid(cal::AbstractAnemCalibr) = cal.fluid
+calfluid(cal::AbstractAnemCalibr) = cal.fluid
 
 """
 `makecaltable(E, U, T, P)`
@@ -123,7 +125,13 @@ function makecaltable(E::AbstractVector{X}, U::AbstractVector{Y}, T, P) where {X
 end
 
 
-struct TempCalibr{Fit} <: AbstractAnemCalibr
+struct TempCalibr{X,Fluid,Fit} <: AbstractAnemCalibr
+    "Calibration temperature"
+    T::X
+    "Calibration pressure"
+    P::X
+    "Calibration fluid"
+    fluid::Fluid
     "Calibration curve fit"
     fit::Fit
 end
@@ -175,7 +183,7 @@ function TempCalibr(R::RT,
                     U::AbstractVector,
                     E::AbstractVector, Rw,
                     T, P, makefitfun;
-                    fluid=nothing) where {RT<:AbstractResistor}
+                    fluid=AIR) where {RT<:AbstractResistor}
     
     @assert size(U) == size(E) 
     Tw = temperature.(R, Rw)
@@ -185,11 +193,11 @@ function TempCalibr(R::RT,
     fit = makefitfun(E.^2 ./ (ΔT .* Rw), U)
     
     
-    return TempCalibr(fit)
+    return TempCalibr(mean(T), mean(P), fluid, fit)
     
 end
 
-function hwcorrect(cal::TempCalibr, R::RT, E, Rw, T, P,
+function hwcorrect(cal::TempCalibr, R::RT, Rw, T, P,
                    fluid) where {RT<:AbstractResistor}
     Tw = temperature(R, Rw)
     ΔT = Tw - T
@@ -205,13 +213,19 @@ Calculate the velocity given anemometer output `E` and flow conditions `T`, `P`,
 """    
 function velocity(cal::TempCalibr, R::RT, E, Rw, T, P,
                   fluid) where {RT<:AbstractResistor}
-    RΔT, ν = hwcorrect(cal, R, E, Rw, T, P, fluid)
+    RΔT, ν = hwcorrect(cal, R, Rw, T, P, fluid)
     return ν * cal.fit(E*E/RΔT) 
 end
 
 
 
-struct HWCalibr{X<:AbstractFloat,Fit} <: AbstractAnemCalibr
+struct HWCalibr{X<:AbstractFloat,Fluid,Fit} <: AbstractAnemCalibr
+    "Calibration temperature"
+    T::X
+    "Calibration pressure"
+    P::X
+    "Calibration fluid"
+    fluid::Fluid
     "Calibration curve fit"
     fit::Fit
     "Prandtl number exponent in Nusselt"
@@ -321,11 +335,12 @@ function HWCalibr(R::RT,
     Ex = E .* E ./ (phi .* Rw .* ΔT)
 
     fit = makefitfun(Ex, Rec)
-    return HWCalibr(fit, n, theta)
+    return HWCalibr(mean(T), mean(P), fluid, fit, n, theta)
     
 end
 
-function hwcorrect(cal::HWCalibr, R::RT, E, Rw, T, P, fluid)
+function hwcorrect(cal::HWCalibr, R::RT, Rw, T, P,
+                   fluid) where {RT<:AbstractResistor}
     Tw = temperature(R, Rw)
     ΔT = Tw - T
     Tf = T + θ*ΔT
@@ -338,8 +353,9 @@ function hwcorrect(cal::HWCalibr, R::RT, E, Rw, T, P, fluid)
 end
 
 
-function velocity(cal::HWCalibr, R::RT, E, Rw, T, P, fluid)
-    RϕΔT, ν = hwcorrect(cal, R, E, Rw, T, P, fluid)
+function velocity(cal::HWCalibr, R::RT, E, Rw, T, P,
+                  fluid) where {RT<:AbstractResistor}
+    RϕΔT, ν = hwcorrect(cal, R, Rw, T, P, fluid)
     return ν * cal.fit(E*E/RϕΔT)    
 end
 

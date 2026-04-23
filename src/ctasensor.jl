@@ -24,24 +24,12 @@ struct CTASensor{U,RT,Calibr} <: AbstractCTA
     R::RT
     "Operating resistance of the sensor"
     Rw::U
-    "Operating temperature of the sensor"
-    Tw::U
     "Calibration and correction model"
     calibr::Calibr
 end
 Base.broadcastable(sensor::CTASensor) = Ref(sensor)
 
-function CTASensor(model, R::RT, Rw, E::AbstractArray, U::AbstractArray,
-                   T, P, makefitfun;
-                   fluid=AIR, params...) where {RT<:AbstractResistor}
-    
-    
-    calibr = model(R, E, U, T, P, Rw, makefitfun; fluid=fluid, params...)
-    Tw = temperature(R, Rw)
-    return CTASensor(R, Rw, Tw, calibr) 
-end
 
-CTASensor(calibr) = CTASensor(calibr.R, calibr.Rw, calibr.Tw, calibr)
 
 
 resistor(w::AbstractCTA) = w.R
@@ -50,7 +38,7 @@ resistor(w::AbstractCTA) = w.R
 resistance(w::AbstractCTA) = w.Rw
 
 "Operating temperature of the CTA"
-temperature(w::CTASensor) = w.Tw
+temperature(w::CTASensor) = temperature(w.R, w.Rw)
 
 reftemp(w::CTASensor) = reftemp(w.R)
 refresist(w::CTASensor) = refresist(w.R)
@@ -66,22 +54,30 @@ overtemp(w::AbstractCTA,T) = temperature(w) - T
 overtemp(w::AbstractCTA) = temperature(w) - reftemp(w) 
 
 
-fluid(w::CTASensor) = fluid(w.calibr)
-pressure(w::CTASensor) = pressure(w.calibr)
-caltemp(w::CTASensor) = reftemp(w.calibr)
+calibration(w::AbstractCTA) = w.calibr
+
+caltemp(w) = caltemp(calibration(w))
+calpress(w) = calpress(calibration(w))
+caltemp(w) = calfluid(calibration(w))
 
 
+function velocity(w::CTASensor, E; T=caltemp(w), P=calpress(w),
+                  fluid=calfluid(w), R=resistance(Rw))
+    velocity(calibration(w), resistor(w), E, R, T, P, fluid)
+end
 
-velocity(w::CTASensor, E; kw...) = velocity(w.calibr, E; kw...)
+function velocity!(U::AbstractArray, w::CTASensor, E::AbstractArray;
+                   T=caltemp(w), P=calpress(w),
+                   fluid=calfluid(w), R=resistance(Rw))
+    @assert size(U) == size(E)
+    param, nu = hwcorrect(calibration(w), resistor(w), R, T, P, fluid)
+    map!(e->nu * calibration(w).fit(e*e/param), U, E)
+end
 
-
-velocity!(U::AbstractArray, w::CTASensor, E::AbstractArray; kw...) =
-    velocity!(U, w.calibr, E; kw...)
-
-velocity(w::CTASensor, E::AbstractArray;
-         T=caltemp(w), P=pressure(w),
-         fluid=fluid(w), Rw=resistance(w)) = velocity!(similar(E), w.calibr, E,
-                                                       T=T,P=P,fluid=fluid,Rw=Rw)
+function velocity(w::CTASensor, E::AbstractArray; T=caltemp(w), P=calpress(w),
+                  fluid=calfluid(w), R=resistance(Rw))
+    velocity!(similar(W), w, E; T=T, P=P, fluid=fluid, R=R)
+end
 
 
 (w::CTASensor)(E; kw...) = velocity(w, E; kw...)

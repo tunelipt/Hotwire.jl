@@ -35,6 +35,3 @@ heatcond(fl::HumidAir, T, P=101325.0) = PropsSI("L", "P", P, "T", T, "Air")
 density(fl::HumidAir, T, P=101325.0) = 1/HAPropsSI("Vha", "P", P, "T", T, "W", fl.w)
 viscosity(fl::HumidAir, T, P=101325.0) = PropsSI("V", "P", P, "T", T, "Air")
 prandtl(fl::HumidAir, T, P=101325.0) = PropsSI("PRANDTL", "P", P, "T", T, "Air")
-
-lixo
-                  
