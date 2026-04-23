@@ -7,17 +7,19 @@ abstract type AbstractProbe2d <: AbstractProbe end
 abstract type AbstractProbe3d <: AbstractProbe end
 
 
-struct Probe1d{Anem<:AbstractThermalAnemometer,Setup} <: AbstractProbe1d
+struct Probe1d{X,Anem<:AbstractThermalAnemometer,Setup} <: AbstractProbe1d
     "Anemometer sensor information"
     sensor::Anem
     "Anemometer setup"
     setup::Setup
+    "Calibration table"
+    cal::Matrix{X}
 end
 
 Base.broadcastable(sensor::Probe1d) = Ref(sensor)
 
 """
-    `Probe1d(sensor, setup)`
+    `Probe1d(sensor, setup,)`
 
 Creates a 1d probe. This completely characterizes a 1d probe. It includes
 information on calibration, bridge configuration, output filter, etc.
