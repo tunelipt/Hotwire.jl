@@ -58,7 +58,7 @@ calibration(w::AbstractCTA) = w.calibr
 
 caltemp(w) = caltemp(calibration(w))
 calpress(w) = calpress(calibration(w))
-caltemp(w) = calfluid(calibration(w))
+calfluid(w) = calfluid(calibration(w))
 
 
 function velocity(w::CTASensor, E; T=caltemp(w), P=calpress(w),
