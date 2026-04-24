@@ -170,7 +170,7 @@ end
 Base.broadcastable(calibr::TempCalibr) = Ref(calibr)
 
 """
-`TempCalibr(R, Ec, Uc, Tc, Pc, Rwc, makefitfun;
+`TempCalibr(R, Uc, Ec, Tc, Pc, Rwc, makefitfun;
             Rw=nothing, T=nothing, P=nothing, fluid=AIR)`
 
 See [`AbstratcAnemCalibr`](@ref) for a general description of the interface.
@@ -360,13 +360,13 @@ function HWCalibr(R::RT,
     phi   = heatcond.(fluid, Tf,  P) .* prandtl.(fluid, Tf, P) .^ n
 
     # Reynolds number
-    nu = kinvisc.(fluid, Tf, Pc)
+    nu = kinvisc.(fluid, Tf, P)
     Re = U ./ nu
 
     # E²/ϕΔT
     Ex = E .* E ./ (phi .* Rw .* ΔT)
 
-    fit = makefitfun(Ex, Rec)
+    fit = makefitfun(Ex, Re)
     return HWCalibr(mean(T), mean(P), fluid, fit, n, theta)
     
 end
@@ -375,7 +375,7 @@ function hwcorrect(cal::HWCalibr, R::RT, Rw, T, P,
                    fluid) where {RT<:AbstractResistor}
     Tw = temperature(R, Rw)
     ΔT = Tw - T
-    Tf = T + θ*ΔT
+    Tf = T + cal.theta*ΔT
     
     k = heatcond(fluid, Tf, P)
     Pr = prandtl(fluid, Tf, P)

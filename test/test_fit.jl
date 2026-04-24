@@ -18,6 +18,18 @@ let
         @test f.poly[i] ≈ 0.0 atol=1e-10
     end
     
-        
+
+    mf = makekingfitfun(a=a, N=N)
+
+    f2 = mf(E², U)
+    
+    U2 = f.(E²)
+
+    @test U2 ≈ U
+    @test f2.poly[0] ≈ -1.0
+    @test f2.poly[1] ≈ +0.5
+    for i in 2:5
+        @test f2.poly[i] ≈ 0.0 atol=1e-10
+    end
     
 end

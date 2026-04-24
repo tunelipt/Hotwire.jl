@@ -18,7 +18,7 @@ export CTASensor, Wire, resistor, overheatratio, overtemp, gain,caltemp
 export AbstractThermalAnemometer
 export CCASensor, current
 export KingLaw, KingPoly, Polynomial, PowerPoly
-export make_king_fitfun, make_kingpoly_fitfun, make_poly_fitfun
+export makekingfitfun
 
 export sensor
 export AbstractProbe, AbstractProbe1d, AbstractProbe2d, AbstractProbe3d
