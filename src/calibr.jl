@@ -36,32 +36,64 @@ The interface for `AbstractAnemCalibr` objects is:
 
 ```julia
 
-CalibrationMethof(R::RT,
-                  Ec::AbstractVector,
-                  Uc::AbstractVector,
-                  Tc, Pc, Rwc, makefitfun;
-                  Rw=nothing, T=nothing, P=nothing,
+CalibrationMethod(R::RT,
+                  E::AbstractVector,
+                  U::AbstractVector, Rw,
+                  T, P, makefitfun;
                   fluid=AIR, params...) where {RT<:AbstractResistor}
 ```
 
 The input arguments are
  * `R` an [`AbstractResistor`](@ref) object ([`Resistor`](@ref) or [`Thermistor`](@ref))
- * `Ec` `AbstractVector` containing the voltage output of the sensor during calibration
- * `Uc` `AbstractVector` containing the calibration velocity
- * `Tc` Calibration temperature - could be a scalar or a vector
- * `Pc` Calibration pressure - could be a scalar or a vector
- * `Rwc` Op. calibration resistance. Constant value for CTA but a vector otherwise.
+ * `E` `AbstractVector` containing the voltage output of the sensor during calibration
+ * `U` `AbstractVector` containing the calibration velocity
+ * `Rw` Op. calibration resistance. Constant value for CTA but a vector otherwise.
+ * `T` Calibration temperature - could be a scalar or a vector
+ * `P` Calibration pressure - could be a scalar or a vector
  * `makefitfun` a function the creates a curve fit for calibration data.
-
+ 
 Key word arguments
- * `Rw` specific calibration operating resistance. If not given use mean of `Rwc`
- * `T` specific calibration temperature. If not given, use mean of `Tc`
- * `P` specific calibration pressure. If not given, use mean of `Pc`
  * `fluid` Object that allows the calculation of thermodynamic and transport properties
  * `params...` model specific parameters.
 
+#### Basic approach
+The heat transfer from a heated element is given by Newton's law of cooling:
+
+```math
+Q̇ = h(U, ...) (Tw - Ta)
+```
+
+But ``Q̇`` is dependent on the electric properties of the self heated resistor:
+```math
+Q̇ = E⋅I = E² / Rw
+```
+
+The convection coefficient ``h``, from dimensional analysis is dependent on the Reynolds number, therefor
+```math
+E² / (Rw⋅(Tw-Ta)⋅stuff...) = f(U/ν)
+```
+where stuff is what the different models will modify. In the simplest case where fluid
+properties are constant, stuff is just 1.
+
+inverting this relationship we have
+```math
+U/ν = g( E² / (Rw⋅(Tw-Ta)⋅stuff...) )
+```
 
 #### Curve fit
+
+The curve fitting scheme should fit the above equations. Different possibilities exist but it helps to rememember that in general
+
+```math
+Q̇ ∝ √U
+```
+
+So something like
+```math
+(U/ν)ᵅ = a₀ + a₁E² + a₂E⁴ + a₃E⁶ + …
+```
+
+works really well.
 The appropriate curve fitting procedure depends on the exact model and can not be
 specified here. At first thought it should be a curve (possibly a polynomial)
 of type ``U = U(E)`` but different models use different approaches. [`TempCalibr`](@ref)

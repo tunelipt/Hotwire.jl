@@ -1,6 +1,7 @@
 using Hotwire
 using Polynomials
 using Test
+import CoolProp: PropsSI, HAPropsSI
 
 function nucyl(Re,Pr)
     if Re < 4
@@ -20,7 +21,7 @@ end
 @testset "Hotwire.jl" begin
 
     include("test_resistor.jl")
-    #include("test_fluid.jl")
+    include("test_fluid.jl")
     #include("test_calibr.jl")
     #include("test_cta.jl")
     #include("test_probe2d.jl")
@@ -28,3 +29,4 @@ end
     
     
 end
+
