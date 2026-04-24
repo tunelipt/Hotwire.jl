@@ -22,6 +22,7 @@ end
 
     include("test_resistor.jl")
     include("test_fluid.jl")
+    include("test_fit.jl")
     #include("test_calibr.jl")
     #include("test_cta.jl")
     #include("test_probe2d.jl")
