@@ -20,10 +20,10 @@ abstract type AbstractResistor end
 A resistor with resistance varying linearly with temperature:
 
 ```math
-R = R₀ (1 + α (T - T₀))
+R = R₀ (1 + a (T - T₀))
 ```
 
-**IMPORTANT** In the constructor, coefficient `α` is a *fraction*, not percentage.
+**IMPORTANT** In the constructor, coefficient `a` is a *fraction*, not percentage.
  linear. 
 
 # Examples
@@ -52,22 +52,23 @@ julia> temperature(R, 2000)
 
 ```
 """
-struct Resistor{T} <: AbstractResistor
+struct Resistor{U<:Number} <: AbstractResistor
     "Resistance at reference temperature (Ω)"
-    R₀::T
+    R::U 
     "Linear resistance coefficient"
-    α::T
+    a::U 
     "Reference temperature (K)"
-    T₀::T
+    T::U
 end
 Base.broadcastable(R::Resistor) = Ref(R)
 
+Resistor(R::Number,a::Number,T::Number) = Resistor(promote(R,a,T)...)
 
-Resistor(;R,a=0.4e-2,T=20.0) = Resistor(R,a,T)
+Resistor(;R=3.5,a=0.4e-2,T=20.0) = Resistor(R,a,T)
 
 
 """
-    `R = Thermistor(R₀, B, T₀)`
+    `R = Thermistor(R, B, T₀)`
     `R = Thermistor(R=5e3, B=3950.0, T=293.15)`
 
 Models a NTC thermistor. In the constructor, `R0` is the resistance of the thermistor at the reference temperature  `T₀`. For convenience, the temperature should be expressed in K. `B` is a coefficient that characterizes the temperature dependence of the thermistor. In the model used her, the resistance varies with temperature according to the following equation:
@@ -110,16 +111,16 @@ julia> temperature(R, 4163.588)
 ```
 
 """
-struct Thermistor{T} <: AbstractResistor
+struct Thermistor{U<:Number} <: AbstractResistor
     "Reference resistance in Ω at temperature `T₀`"
-    R₀::T
+    R::U
     "Thermistor's B coefficient in K "
-    B::T
+    B::U
     "Reference temperature in K"
-    T₀::T
+    T::U
 end
 Base.broadcastable(R::Thermistor) = Ref(R)
-
+Thermistor(R::Number, B::Number, T::Number) = Thermistor(promote(R,B,T)...)
 Thermistor(;R=5e3,B=3950.0,T=298.15) = Thermistor(R,B,T)
 
 
@@ -137,9 +138,9 @@ For more details on type `Resistor`, see [`Thermistor`](@ref).
 See also [`temperature`](@ref), [`reftemp`](@ref), [`refresist`](@ref)
 
 """
-resistance(r::AbstractResistor) = r.R₀
-resistance(r::Resistor, T) = r.R₀ * (1 + r.α * (T - r.T₀))
-resistance(th::Thermistor, T) = th.R₀ * exp( -th.B * (1/th.T₀ - 1/T ) )
+resistance(r::AbstractResistor) = r.R
+resistance(r::Resistor, T) = r.R * (1 + r.a * (T - r.T))
+resistance(th::Thermistor, T) = th.R * exp( -th.B * (1/th.T - 1/T ) )
 
 resistance(r::Real) = r
 resistance(r::Real, T) = r
@@ -153,7 +154,7 @@ See [`refresist`](@ref) for returning the corresponding reference resistance.
 Method [`temperature`](@ref) returns the temperature for a given resistance value
 and methods [`resistance`](@ref) returns the resistance at a given temperature.
 """
-reftemp(r::AbstractResistor) = r.T₀
+reftemp(r::AbstractResistor) = r.T
 
 """
     `refresist(R)`
@@ -161,7 +162,7 @@ reftemp(r::AbstractResistor) = r.T₀
 Returns the reference resistance of an [`AbstractResistor`](@ref) object.
 See [`reftemp`](@ref) for returning corresponding the reference temperature.
 """
-refresist(r::AbstractResistor) = r.R₀
+refresist(r::AbstractResistor) = r.R
 
 """
     `temperature(R)`
@@ -175,13 +176,13 @@ For more details on type `Resistor`, see [`Thermistor`](@ref).
 
 See also [`resistance`](@ref), [`reftemp`](@ref), [`refresist`](@ref)
 """
-temperature(r::AbstractResistor) = r.T₀
-temperature(r::Resistor, R) = 1/r.α * (R/r.R₀ - 1) + r.T₀
-temperature(th::Thermistor, R) = 1/( 1/th.T₀ + 1/th.B * log(R/th.R₀) ) 
-temperature(th::Thermistor) = th.T₀ 
+temperature(r::AbstractResistor) = r.T
+temperature(r::Resistor, R) = 1/r.a * (R/r.R - 1) + r.T
+temperature(th::Thermistor, R) = 1/( 1/th.T + 1/th.B * log(R/th.R) ) 
+temperature(th::Thermistor) = th.T 
 
 (th::Thermistor)(T) = resistance(th, T)
-(th::Thermistor)() = th.R₀
+(th::Thermistor)() = th.R
 (r::Resistor)(T) = resistance(r, T)
 (r::Resistor)() = resistance(r)
 
