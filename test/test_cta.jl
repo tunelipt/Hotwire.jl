@@ -15,27 +15,23 @@ let D=5e-6, L=2e-3
     B = 1.0
     E = @. sqrt(A + B*U^n)
     
-    fit = KingLaw(E, U, n)
-
-    @test fit.A ≈ A
-    @test fit.B ≈ B
-    @test fit.n == n
-
-    fit2 = KingLaw(E, U; n=0.45)
-    @test fit2.A ≈ A
-    @test fit2.B ≈ B
-    @test fit2.n ≈ n
     
     Tw = 273.15 + 240.0
     Rw = R(Tw)
+    ΔT = Tw - Ta
+    
+    calibr = TempCalibr(R, U, E, Rw, Ta, Pa, makekingfitfun(a=n, N=1); fluid=AIRconst)
 
-    calibr = TempCalibr(R, E, U, Ta, Pa, Rw, KingLaw; fluid=AIRconst)
-
-    w = CTASensor(TempCalibr, R, Rw, E, U, Ta, Pa, KingLaw; fluid=AIRconst)
+    p = calibr.fit.poly
+    @test p[0] ≈ -A/(B)
+    @test B ≈ p[1]/(B*Rw*ΔT)
+    
+    
+    w = CTASensor(R, Rw, calibr)
     @test temperature(w) == Tw
     @test resistance(w) == Rw
     @test caltemp(w) == Ta
-    @test pressure(w) == Pa
+    @test calpress(w) == Pa
     @test resistor(w) == R
     
 
@@ -50,8 +46,8 @@ let D=5e-6, L=2e-3
 
     Em = mean(E)
 
-    @test velocity(w, Em) ≈ velocity(calibr, Em)
-    @test velocity(w, Em; T=Ta+10) ≈ velocity(calibr, Em; T=Ta+10)
+    @test velocity(w, Em) ≈ velocity(calibr, R, Em, Rw, Ta, Pa, AIRconst)
+    @test velocity(w, Em; T=Ta+10) ≈ velocity(calibr, R, Em, Rw, Ta+10, Pa, AIRconst)
     
     
 end
@@ -60,30 +56,46 @@ end
 let 
     Ta = 273.15 + 25.0
     Pa = 101325.0
-
-    AIRconst = ConstPropFluid(AIR, Ta, Pa)
-
+    
+    AIRconst = AIR #ConstPropFluid(AIR, Ta, Pa)
+    fl = AIRconst
+    
     R = Thermistor(R=5e3, B=3950.0, T=Ta)
     U = 1.0 : 10.0
-    n = 0.35
+    n = 0.4
     A = 36.0
     B = 10.0
     E = @. sqrt(A + B*U^n)
     
-    fit = KingLaw(E, U, n)
 
     Rw = 100.0
     Tw = temperature(R, Rw)
+    ΔT = Tw - Ta
 
-    calibr = HWCalibr(R, E, U, Ta, Pa, Rw, (x,y)->PowerPoly(x,y; n=n, N=1);
-                      fluid=AIRconst, theta=0.3, n=0.3)
+    theta=0.3
+    n = 0.4
+    Tf = Ta + theta*ΔT
 
-    w =  CTASensor(calibr)
+    nu = kinvisc(AIRconst, Tf, Pa)
+    k  = heatcond(AIRconst, Tf, Pa)
+    Pr = prandtl(AIRconst, Tf, Pa)
+    phi = k*Pr^n*Rw*ΔT
+    
+    calibr = HWCalibr(R, U, E, Rw, Ta, Pa, makekingfitfun(a=n, N=1);
+                      fluid=AIRconst, n=n, theta=theta)
 
+    p = calibr.fit.poly
+    @test p[0] ≈ -A/(B*nu^n)
+    @test p[1]/phi ≈ 1/(B*nu^n)
+    
+    
+    w =  CTASensor(R, Rw, calibr)
+
+    
     @test temperature(w) == Tw
     @test resistance(w) == Rw
     @test caltemp(w) == Ta
-    @test pressure(w) == Pa
+    @test calpress(w) == Pa
     @test resistor(w) == R
     
     U1 = w.(E)
@@ -96,8 +108,8 @@ let
 
     Em = mean(E)
 
-    @test velocity(w, Em) ≈ velocity(calibr, Em)
-    @test velocity(w, Em; T=Ta+10) ≈ velocity(calibr, Em; T=Ta+10)
+    @test velocity(w, Em) ≈ velocity(calibr, R, Em, Rw, Ta, Pa, AIRconst)
+    @test velocity(w, Em; T=Ta+10) ≈ velocity(calibr, R, Em, Rw, Ta+10, Pa, AIRconst)
 
 end
 

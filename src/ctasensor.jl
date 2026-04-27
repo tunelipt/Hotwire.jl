@@ -62,21 +62,21 @@ calfluid(w) = calfluid(calibration(w))
 
 
 function velocity(w::CTASensor, E; T=caltemp(w), P=calpress(w),
-                  fluid=calfluid(w), R=resistance(Rw))
+                  fluid=calfluid(w), R=resistance(w))
     velocity(calibration(w), resistor(w), E, R, T, P, fluid)
 end
 
 function velocity!(U::AbstractArray, w::CTASensor, E::AbstractArray;
                    T=caltemp(w), P=calpress(w),
-                   fluid=calfluid(w), R=resistance(Rw))
+                   fluid=calfluid(w), R=resistance(w))
     @assert size(U) == size(E)
     param, nu = hwcorrect(calibration(w), resistor(w), R, T, P, fluid)
     map!(e->nu * calibration(w).fit(e*e/param), U, E)
 end
 
 function velocity(w::CTASensor, E::AbstractArray; T=caltemp(w), P=calpress(w),
-                  fluid=calfluid(w), R=resistance(Rw))
-    velocity!(similar(W), w, E; T=T, P=P, fluid=fluid, R=R)
+                  fluid=calfluid(w), R=resistance(w))
+    velocity!(similar(E), w, E; T=T, P=P, fluid=fluid, R=R)
 end
 
 
