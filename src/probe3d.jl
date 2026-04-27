@@ -1,6 +1,6 @@
 using StaticArrays
 
-mutable struct Probe3d{Anems,Setup} <: AbstractProbe3d
+mutable struct Probe3d{Anems,Setup,Device} <: AbstractProbe3d
     "Sensor information"
     sensor::Anems
     "k² directional calibration coefficient"
@@ -19,6 +19,8 @@ mutable struct Probe3d{Anems,Setup} <: AbstractProbe3d
     idircal::Int
     "Anemometer setup"
     setup::Setup
+    "Analog input device"
+    dev::Device
 end
 
 sensor(w::Probe3d) = w.sensor
@@ -29,7 +31,7 @@ const cosϕ_dantec =  @SMatrix [-sqrt(1/3)  1/sqrt(2)   -sqrt(1-1/3-1/2);
                                -sqrt(1/3)      0.0         sqrt(1-1/3) ]
 
 """
-`Probe3d(sensor, cal, k², h², setup=""; ih=[3,1,2], idircal=1,
+`Probe3d(sensor, cal, k², h², setup="", device=""; ih=[3,1,2], idircal=1,
          cosang=cosϕ_dantec)`
 
 Creates a 3d probe. This completely characterizes a 3d probe. It includes
@@ -63,7 +65,7 @@ For Dantex triaxial probes, wires 1 and make an angle of 45° with axis y, wire
 3 is in plane xz and cos²θ = 1/3 where θ is the angle that the wires 1 - 3 make
 with coordinate axis x.
 """
-function Probe3d(sensor, k², h², setup=""; ih=[3,1,2], idircal=1,
+function Probe3d(sensor, k², h², setup="", device=""; ih=[3,1,2], idircal=1,
                  cosang=cosϕ_dantec)
     K = ones(3,3)
     for i in 1:3
@@ -77,7 +79,7 @@ function Probe3d(sensor, k², h², setup=""; ih=[3,1,2], idircal=1,
                      (1.0 + k²[3] + h²[3])*cosϕ[3,idircal]^2 ]
     
     return Probe3d(sensor, k², h², ih, cosϕ, 
-                   c2e, inv(SMatrix{3,3}(K)), idircal, setup)
+                   c2e, inv(SMatrix{3,3}(K)), idircal, setup, device)
 end
 
 

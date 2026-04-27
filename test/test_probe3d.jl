@@ -10,25 +10,32 @@ let
     h² = @SVector [1.0, 1.0, 1.0]
 
     R = Resistor(R=3.5, a=0.4e-2, T=Ta)
-    E = collect(1.0:20.0)
+    U = collect(1.0:20.0)
+    E = sqrt.(U)
     Tw = 273.15 + 240.0
     Rw = R(Tw)
-
-    wire1 = CTASensor(TempCalibr, R, Rw, E, E, Ta, Pa, (E,U)->(x->x);
-                      fluid=AIRconst)
-    wire2 = CTASensor(TempCalibr, R, Rw, E, E, Ta, Pa, (E,U)->(x->x);
-                      fluid=AIRconst)
-    wire3 = CTASensor(TempCalibr, R, Rw, E, E, Ta, Pa, (E,U)->(x->x);
-                      fluid=AIRconst)
+    sqa(x) = sqrt(abs(x))
+    calibr1 = TempCalibr(R, U, E, Rw, Ta, Pa, makekingfitfun(a=1.0, N=1);
+                         fluid=AIRconst)
+    calibr2 = TempCalibr(R, U, E, Rw, Ta, Pa, makekingfitfun(a=1.0, N=1);
+                         fluid=AIRconst)
+    calibr3= TempCalibr(R, U, E, Rw, Ta, Pa, makekingfitfun(a=1.0, N=1);
+                         fluid=AIRconst)
+    
+    wire1 = CTASensor(R, Rw, calibr1)
+    wire2 = CTASensor(R, Rw, calibr2)
+    wire3 = CTASensor(R, Rw, calibr3)
 
     wires = (wire1, wire2, wire3)
 
     probe = Probe3d(wires, k², h²)
+   
     Ux, Uy, Uz = velocity(probe, 1.0, 1.0, 1.0)
     @test Ux ≈ 1.0
     @test Uy ≈ 0.0 atol=1e-5
     @test Uz ≈ 0.0 atol=1e-5
 
+    
     k² = @SVector [0.03, 0.04, 0.05]
     h² = @SVector [1.05, 1.08, 1.02]
     probe = Probe3d(wires, k², h²)
@@ -70,9 +77,8 @@ let
     Uc1 = sqrt.( Ue1² ./ c[1] )
     Uc2 = sqrt.( Ue2² ./ c[2] )
     Uc3 = sqrt.( Ue3² ./ c[3] )
-    
-                
-    vel1 = probe.(Uc1, Uc2, Uc3)
+    E1 = sqa.(Uc1); E2 = sqa.(Uc2); E3 = sqa.(Uc3)
+    vel1 = probe.(E1, E2, E3)
     Ux1 = [v[1] for v in vel1]
     Uy1 = [v[2] for v in vel1]
     Uz1 = [v[3] for v in vel1]

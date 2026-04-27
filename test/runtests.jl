@@ -27,7 +27,7 @@ end
     include("test_cta.jl")
     include("test_probe1d.jl")
     include("test_probe2d.jl")
-    #include("test_probe3d.jl")
+    include("test_probe3d.jl")
     
     
 end

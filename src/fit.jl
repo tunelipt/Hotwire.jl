@@ -95,3 +95,71 @@ makekingfitfun(;a=0.45, N=4) =
 
 
     
+
+
+
+
+"""
+ * `linearfit(y::AbstractVector{T}, ϕ::AbstractVector{T})`
+ * `linearfit(y::AbstractVector{T}, ϕ₁::AbstractVector{T}, , ϕ₁::AbstractVector{T})`
+
+This function uses the the least squares principle to fit a linear model to data.
+
+The first form fits
+
+`y[i] = a ⋅ ϕ[i]`
+
+returning coefficient `a`
+
+The second form fits
+
+`y[i] = a₁ ⋅ ϕ₁[i] + a₂ ⋅ ϕ₂[i]`
+
+returning the tuple `(a₁, a₂)`.
+
+
+ 
+
+"""
+function linearfit(y::AbstractVector{T}, ϕ::AbstractVector{T}) where {T}
+    @assert length(y) == length(ϕ) "Incompatible sizes!"
+    
+    A = zero(T)
+    b = zero(T)
+    for (yᵢ, ϕᵢ) in zip(y,ϕ)
+        A += ϕᵢ*ϕᵢ
+        b += yᵢ*ϕᵢ
+    end
+    return b / A
+end
+
+function linearfit(y::AbstractVector{T},
+                   ϕ₁::AbstractVector{T}, ϕ₂::AbstractVector{T}) where {T}
+
+    @assert length(y) == length(ϕ₁) == length(ϕ₂) "Incompatible sizes!"
+    
+    A₁₁ = zero(T)
+    A₁₂ = zero(T)
+    A₂₂ = zero(T)
+    b₁ = zero(T)
+    b₂ = zero(T)
+
+    for i in eachindex(y)
+        yᵢ = y[i]
+        ϕ₁ᵢ = ϕ₁[i]
+        ϕ₂ᵢ = ϕ₂[i]
+                
+        b₁ += ϕ₁ᵢ * yᵢ
+        b₂ += ϕ₂ᵢ * yᵢ
+
+        A₁₁ += ϕ₁ᵢ * ϕ₁ᵢ
+        A₂₂ += ϕ₂ᵢ * ϕ₂ᵢ
+        A₁₂ += ϕ₁ᵢ * ϕ₂ᵢ
+    end
+
+    a₂ = (b₂ - A₁₂/A₁₁ * b₁) / (A₂₂ - A₁₂*A₁₂/A₁₁)
+    a₁ = (b₁  - A₁₂ * a₂) /  A₁₁
+
+    return a₁, a₂
+        
+end
