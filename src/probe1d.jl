@@ -7,13 +7,13 @@ abstract type AbstractProbe2d <: AbstractProbe end
 abstract type AbstractProbe3d <: AbstractProbe end
 
 
-struct Probe1d{X,Anem<:AbstractThermalAnemometer,Setup} <: AbstractProbe1d
+struct Probe1d{Anem<:AbstractThermalAnemometer,Setup,Device} <: AbstractProbe1d
     "Anemometer sensor information"
     sensor::Anem
     "Anemometer setup"
     setup::Setup
-    "Calibration table"
-    cal::Matrix{X}
+    "Analog input channel information"
+    dev::Device
 end
 
 Base.broadcastable(sensor::Probe1d) = Ref(sensor)
@@ -38,7 +38,7 @@ sensor(w::Probe1d) = w.sensor
 reftemp(w::Probe1d) = reftemp(w.sensor)
 caltemp(w::Probe1d) = caltemp(w.sensor)
 resistance(w::Probe1d) = resistance(w.sensor)
-pressure(w::Probe1d) = pressure(w.sensor)
+calpress(w::Probe1d) = calpress(w.sensor)
 fluid(w::Probe1d) = fluid(w.sensor)
 
 # Just get stuff for CTA

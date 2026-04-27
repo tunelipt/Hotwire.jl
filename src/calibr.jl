@@ -120,7 +120,6 @@ implemented such as `AIR`, `NITROGEN`, `OXYGEN`, `HELIUM`, `C3H8`, `CO2` and
 abstract type AbstractAnemCalibr end
 
 "Calibration pressure"
-pressure(cal::AbstractAnemCalibr) = cal.P
 calpress(cal::AbstractAnemCalibr) = cal.P
 
 "Calibration temperature"
