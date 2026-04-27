@@ -1,13 +1,14 @@
 import Statistics: mean
 
 
-mutable struct Probe2d{Anems,Setup} <: AbstractProbe2d
+mutable struct Probe2d{Anems,Setup,Device} <: AbstractProbe2d
     "Sensor information"
     sensor::Anems
     "k² directional calibration for each sensor"
     k²::NTuple{2,Float64}
     "Anemometer setup"
     setup::Setup
+    dev::Device
 end
 
 sensor(w::Probe2d) = w.sensor
