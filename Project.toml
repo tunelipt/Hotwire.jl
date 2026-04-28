@@ -1,6 +1,6 @@
 name = "Hotwire"
 uuid = "d5de4fbe-640e-469d-b7ad-3c69fc3f3f61"
-version = "0.1.1"
+version = "0.2.0"
 authors = ["Paulo Jabardo", "IPT"]
 
 [deps]
