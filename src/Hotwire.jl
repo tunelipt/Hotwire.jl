@@ -51,5 +51,11 @@ include("fit.jl")
 include("probe1d.jl")
 include("probe2d.jl")
 include("probe3d.jl")
+include("toml.jl")
 
+import LabDaqConfig: labdaqregister
+function __init__()
+    labdaqregister("hotwire", hwconfig)
+    return nothing
+end
 end # module

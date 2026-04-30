@@ -2,18 +2,15 @@
 
 
 [[probe]]
-# Number of wires
-N = 1
+type = "hotwire"
+# Number of wires or resistance elements
+nwires = 1
 descr = "A hotwire CTA, with linear probe Description of the sensor/etc"
 # Tag for the sensor
 tag = "XYZ"
 
 # Configuration of the hardware
-[probe.hardware]
-type = "generic"  # Default - see Streamline
-# Operation mode: CTA or CCA. Default is CTA!
-mode = "CTA"
-# For CTA, we need to specify the operating resistance
+[probe.cta]
 R = 6.3 
 
 # Data acaquisition device
@@ -52,7 +49,7 @@ tag = "XYZ"
 # Configuration of the hardware
 [probe.hardware]
 type = "" # Dantec Streamline
-file = 
+ 
 # Operation mode: CTA or CCA. Default is CTA!
 mode = "CTA"
 # For CTA, we need to specify the operating resistance
@@ -66,7 +63,7 @@ channel = 4
 [probe.resistance]
 # The type of resistance element.
 # For a linear resistance, R = R0.(1 + a.(T-T0))
-type = "NTC"  # Could be 'NTC'
+type = "ntc"  # Could be 'NTC'
 R = 5e3 # Reference resistance (Ohms)
 B = 3950 # B coefficient
 T = 298.15 # Reference temperature. Try to use SI units, K
