@@ -159,3 +159,12 @@ const HYDROGEN  = IdealGas(M_H₂, IPoly(c_cₚ_H₂,:T), IPoly(c_μ_H₂,:T), I
 
 
     
+const standard_ideal_fluid_table = Dict("AIR"=>AIR,
+                                        "NITROGEN"=>NITROGEN,
+                                        "OXYGEN"=>OXYGEN,
+                                        "HELIUM"=>HELIUM,
+                                        "C3H8"=>C3H8,
+                                        "CO2"=>CO2,
+                                        "HYDROGEN"=>HYDROGEN)
+
+                                 

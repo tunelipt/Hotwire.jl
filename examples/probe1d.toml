@@ -82,3 +82,13 @@ fluid = "AIR"
 
 
 
+[[fluids]]
+type = "constant"
+rho = 1.2045751824931505
+mu = 1.8205675178515367e-5
+k = 0.025873828302933142
+cp = 1006.1440320870352
+[[fluids]]
+type="coolprop"
+composition="Air"
+[[fluids]]

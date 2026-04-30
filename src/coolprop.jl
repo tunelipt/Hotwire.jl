@@ -30,8 +30,14 @@ function HumidAir(;T=293.15, P=101325.0, hum...)
     HumidAir(w)
 end
 
+function HumidAir(T, P, hum_var, hum_val)
+    w = HAPropsSI("W", "T", T, "P", P, hum_var, hum_val)
+    HumidAir(w)
+end
+
 specheat(fl::HumidAir, T, P=101325.0) = HAPropsSI("cp_ha", "P", P, "T", T, "W", fl.w)
-heatcond(fl::HumidAir, T, P=101325.0) = PropsSI("L", "P", P, "T", T, "Air")
+heatcond(fl::HumidAir, T, P=101325.0) = HAPropsSI("K", "P", P, "T", T, "W", fl.w)
 density(fl::HumidAir, T, P=101325.0) = 1/HAPropsSI("Vha", "P", P, "T", T, "W", fl.w)
-viscosity(fl::HumidAir, T, P=101325.0) = PropsSI("V", "P", P, "T", T, "Air")
-prandtl(fl::HumidAir, T, P=101325.0) = PropsSI("PRANDTL", "P", P, "T", T, "Air")
+viscosity(fl::HumidAir, T, P=101325.0) = HAPropsSI("M", "P", P, "T", T, "W", fl.w)
+# Prandtl will be calculated from the other properties
+#prandtl(fl::HumidAir, T, P=101325.0) = PropsSI("PRANDTL", "P", P, "T", T, "Air")
