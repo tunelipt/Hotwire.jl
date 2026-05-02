@@ -10,13 +10,22 @@ descr = "A hotwire CTA, with linear probe Description of the sensor/etc"
 tag = "XYZ"
 
 # Configuration of the hardware
-[probe.cta]
-R = 6.3 
+[probe.hardware]
+# Constant temperature. Could be `cca` for constant current
+# Default is cta
+mode = "cta"  
 
-# Data acaquisition device
-[probe.device]
-device = "Dev1"
-channel = 1
+R = 6.3 # Operating resistance. For constant current, it should be I = ...
+# There could be a signal processing. For now only gain and offset are considered
+# Eout = (Ehard - offset) * gain
+gain = 1.0  # Gain, default = 1
+offset = 1.0 # Offset, default = 0.
+
+# Data acquisition information
+[probe.daq]
+device = "Dev1"   # Device reading the data
+channel = 1   # Channel 
+
 
 # Resistance element
 [probe.resistance]
@@ -48,8 +57,6 @@ tag = "XYZ"
 
 # Configuration of the hardware
 [probe.hardware]
-type = "" # Dantec Streamline
- 
 # Operation mode: CTA or CCA. Default is CTA!
 mode = "CTA"
 # For CTA, we need to specify the operating resistance
@@ -67,6 +74,10 @@ type = "ntc"  # Could be 'NTC'
 R = 5e3 # Reference resistance (Ohms)
 B = 3950 # B coefficient
 T = 298.15 # Reference temperature. Try to use SI units, K
+
+[probe.signal]
+gain = 1.0
+offset = 0.0
 
 
 [probe.calibration]

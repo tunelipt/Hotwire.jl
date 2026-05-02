@@ -155,6 +155,16 @@ function makecaltable(E::AbstractVector{X}, U::AbstractVector{Y}, T, P) where {X
     return Tm, Pm, caltab
 end
 
+struct NoCalibr{X,Fluid} <: AbstractAnemCalibr
+    "Calibration temperature"
+    T::X
+    "Calibration pressure"
+    P::X
+    "Calibration fluid"
+    fluid::Fluid
+end
+Base.broadcastable(calibr::NoCalibr) = Ref(calibr)
+
 
 struct TempCalibr{X,Fluid,Fit} <: AbstractAnemCalibr
     "Calibration temperature"
@@ -167,6 +177,24 @@ struct TempCalibr{X,Fluid,Fit} <: AbstractAnemCalibr
     fit::Fit
 end
 Base.broadcastable(calibr::TempCalibr) = Ref(calibr)
+
+function NoCalibr(R::RT,
+                  U::AbstractVector,
+                  E::AbstractVector, Rw,
+                  T, P, makefitfun;
+                  fluid=AIR) where {RT<:AbstractResistor}
+    return NoCalibr(T, P, fluid)
+end
+function hwcorrect(cal::NoCalibr, R::RT, Rw, T, P,
+                   fluid) where {RT<:AbstractResistor}
+    return 1, 1
+end
+
+function velocity(cal::NoCalibr, R::RT, E, Rw, T, P,
+                  fluid) where {RT<:AbstractResistor}
+    return E
+end
+
 
 """
 `TempCalibr(R, Uc, Ec, Tc, Pc, Rwc, makefitfun;

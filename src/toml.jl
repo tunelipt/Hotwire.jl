@@ -38,8 +38,68 @@ function tomlconfig1d(toml)
     else
         R = tomlconfig_resistance(toml["resistance"])
     end
+
+    # Read hardware information
+    if "hardware" ∉ ks
+        error("Hardware not specified!")
+    else
+        hard = tomlconfig_hardware(toml["hardware"])
+    end
+    
+    # Read calibration:
+    if "calibration" ∉ ks
+        error("A calibration should be present")
+    end
+    
+    #return (U=U, E=E, T=T, P=P, fluid=fluid)
+    U, E, T, P, fluid = tomlconfig_calibration(toml["calibration"])
     
 end
+
+function tomlconfig_hardware(toml)
+    ks = keys(toml)
+
+    # Check the mode
+    if "mode" ∉ ks
+        mode = :cta
+    else
+        m = Symbol(lowercase(toml["mode"]))
+        if m != :cta && m != :cca
+            error("Hardware mode $m should be `cta` or `cca`")
+        end
+    end
+
+    if m == :cta
+        # We should read the resistance
+        if "R" ∉ ks
+            error("A `cta` probe should specify the operating resistance")
+        else
+            hard_param = toml["R"]
+        end
+    else
+        if "I" ∉ ks
+            error("A `cca` probe should specify the operating current")
+        else
+            hard_param = toml["I"]
+        end
+    end
+
+    # Now we will read the signal processing stuff
+    if "gain" ∈ ks
+        gain = toml["gain"]
+    else
+        gain = 1.0
+    end
+    
+    if "offset" ∈ ks
+        offset = toml["offset"]
+    else
+        offset = 0.0
+    end
+
+    return (mode=m, param=hard_param, gain=gain, offset=offset)
+end
+
 
 
 function tomlconfig_resistance(toml)
@@ -131,4 +191,58 @@ function tomlconfig_fluid(toml)
         end
         
     end
+end
+
+
+function tomlconfig_calibration(toml)
+
+    # A calibration has the fields E, U, T, P and fluid
+    ks = keys(toml)
+    if "E" ∉ ks
+        error("Probe calibration should have field `E` with voltage")
+    else
+        E = Float64.(toml["E"])
+    end
+    if "U" ∉ ks
+        error("Probe calibration should have field `U` with velocity")
+    else
+        U = Float64.(toml["U"])
+    end
+    Ne = length(E)
+    Nu = length(U)
+    @assert Ne == Nu "U ($Nu elements) should have the same length as E ($Ne elements)"
+    
+    if "T" ∉ ks
+        error("Probe calibration should have field `T` with temperature")
+    else
+        T1 = toml["T"]
+        if T1 isa AbstractVector
+            @assert length(T1)==Ne "`T` should have a single value or the same number of elements of `U`, $Nu elements"
+            T = Float64.(T1)
+        else
+            T = fill(T1, Nu)
+        end
+    end
+
+    if "P" ∉ ks
+        error("Probe calibration should have field `T` with pressure")
+    else
+        P1 = toml["P"]
+        if P1 isa AbstractVector
+            @assert length(T1)==Ne "`P` should have a single value or the same number of elements of `U`, $Nu elements"
+            P = Float64.(P1)
+        else
+            P = fill(P1, Nu)
+        end
+    end
+
+    # Now we should read the fluid. If not provided we will assume AIR
+    if "fluid" ∉ ks
+        fluid = AIR
+    else
+        fluid = tomlconfig_fluid(toml["fluid"])
+    end
+
+    return (U=U, E=E, T=T, P=P, fluid=fluid)
+    
 end
