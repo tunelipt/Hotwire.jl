@@ -1,0 +1,66 @@
+[probe]
+# Type of TOML table
+type = "hotwire"
+# Number of wires or resistance elements
+nwires = 1
+descr = "A hotwire CTA, with linear probe Description of the sensor/etc"
+# Tag for the sensor
+tag = "XYZ"
+
+# A thermal anemometer in `Hotwire` uses a temperature dependent resistor
+# For now, linear resistor and NTC thermistors are possible
+[probe.resistance]
+# The type of resistance element.
+# For a linear resistance, R = R0.(1 + a.(T-T0))
+type = "linear"  # Could be 'ntc'
+R = 3.5 # Reference resistance (Ohms)
+a = 0.4e-2 # Linear coefficient K⁻¹
+T = 298.15 # Reference temperature. Try to use SI units, K
+
+# Configuration of the hardware. Each sensor is specified by the table bridge.
+# The name bridge is more appropriate for CTA sensors but we will use it for
+# all circuits
+[probe.bridge]
+# The bridge is the circuit that controls the thermal anemometer.
+# There are two possibilities (1) Constant temperature 
+# and (2) constant current. The mode field specifies which
+# one is used. In this example we are using constant temperature (`"cta"`).
+# For constant current e `"cca"` should be specified.
+# If not specified, mode is assumed to be  `"cta"`
+mode = "cta"  
+# For `"cta"`, the operating resistance should be specified
+# Operating resistance. For constant current, it should be I = ...
+R = 6.3 
+# There could be a signal processing. For now only gain and offset are considered
+# Eout = (Ehard - offset) * gain
+gain = 1.0  # Gain, default = 1
+offset = 0.0 # Offset, default = 0.
+
+# Data acquisition information
+[probe.daq]
+device = "Dev1"   # Device reading the data
+channel = 1   # Channel 
+
+# The output of a thermal anemometer depends on the conditions of the flow.
+# The correction model, corrects the output.
+[probe.correction]
+# Correction model.
+# The correction models the heat transfer from the probe to the fluid flow.
+# The `"hwcalibr"` model is very general and flexible. 
+model="HWCalibr"  # Could be "TempCalibr" or "NoCorrection", "NoCalibr"
+n=0.3 # Parameter `n` in the model
+theta=0.25 # Parameter `theta` in the model
+# The data should be fitted through a curve. 
+fit={model="KingPoly", n=5, a=0.45}
+
+[probe.calibration]
+# Calibration velocity
+U = [0.504, 0.658, 0.858, 1.111, 1.451, 1.900, 2.440, 3.205, 4.144, 5.364, 6.893, 9.114, 11.708, 15.078, 19.931]
+# Calibration voltage
+E = [1.469, 1.495, 1.523, 1.555, 1.592, 1.633, 1.674, 1.723, 1.771, 1.823, 1.877, 1.943, 2.009, 2.081, 2.166]
+T = 24.0 # Calibration temperature. Could be an array for each calibration point.
+P = 92.65 # Calibration pressure. Could be an array for each calibration point.
+# Calibration fluid
+# If a string is used, it should be something available in src/fluid.jl
+fluid = "AIR"
+

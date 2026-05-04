@@ -165,6 +165,52 @@ struct NoCalibr{X,Fluid} <: AbstractAnemCalibr
 end
 Base.broadcastable(calibr::NoCalibr) = Ref(calibr)
 
+function NoCalibr(R::RT,
+                  U::AbstractVector,
+                  E::AbstractVector, Rw,
+                  T, P, makefitfun;
+                  fluid=AIR) where {RT<:AbstractResistor}
+    return NoCalibr(mean(T), mean(P), fluid)
+end
+function hwcorrect(cal::NoCalibr, R::RT, Rw, T, P,
+                   fluid) where {RT<:AbstractResistor}
+    return 1, 1
+end
+
+function velocity(cal::NoCalibr, R::RT, E, Rw, T, P,
+                  fluid) where {RT<:AbstractResistor}
+    return E
+end
+
+struct NoCorrection{X,Fluid,Fit} <: AbstractAnemCalibr
+    "Calibration temperature"
+    T::X
+    "Calibration pressure"
+    P::X
+    "Calibration fluid"
+    fluid::Fluid
+    "Calibration curve fit"
+    fit::Fit
+end
+Base.broadcastable(calibr::NoCorrection) = Ref(calibr)
+
+function NoCorrection(R::RT,
+                      U::AbstractVector,
+                      E::AbstractVector, Rw,
+                      T, P, makefitfun;
+                      fluid=AIR) where {RT<:AbstractResistor}
+    fit = makefitfun(E,U)
+    
+    return NoCorrection(mean(T), mean(P), fluid)
+end
+function hwcorrect(cal::NoCorrection, R::RT, Rw, T, P,
+                   fluid) where {RT<:AbstractResistor}
+    return 1, 1
+end
+function velocity(cal::NoCorrection, R::RT, E, Rw, T, P,
+                  fluid) where {RT<:AbstractResistor}
+    return cal.fit(E)
+end
 
 struct TempCalibr{X,Fluid,Fit} <: AbstractAnemCalibr
     "Calibration temperature"
@@ -178,22 +224,6 @@ struct TempCalibr{X,Fluid,Fit} <: AbstractAnemCalibr
 end
 Base.broadcastable(calibr::TempCalibr) = Ref(calibr)
 
-function NoCalibr(R::RT,
-                  U::AbstractVector,
-                  E::AbstractVector, Rw,
-                  T, P, makefitfun;
-                  fluid=AIR) where {RT<:AbstractResistor}
-    return NoCalibr(T, P, fluid)
-end
-function hwcorrect(cal::NoCalibr, R::RT, Rw, T, P,
-                   fluid) where {RT<:AbstractResistor}
-    return 1, 1
-end
-
-function velocity(cal::NoCalibr, R::RT, E, Rw, T, P,
-                  fluid) where {RT<:AbstractResistor}
-    return E
-end
 
 
 """

@@ -1,67 +1,115 @@
 # Configuring anemometers from TOML
 
-function hwconfig(toml)
-    ks = keys(toml)
+function toml_hotwire(toml)
     t = toml["type"] 
     if t != "hotwire"
         error("Type expected: `hotwire` got `$t`")
     end
-
-    if "nwires" ∉ ks
+    
+    if !haskey(toml, "nwires") || toml["nwires"] == 1
         # We will assume 1 wire
-        return tomlconfig1d(toml)
+        return toml_hw1d(toml)
     else
         Nw = toml["nwires"]
     end
 
-    
-        
         
 end
 
-function tomlconfig1d(toml)
+
+function toml_hw1d(toml)
     
-    # the mode of operation CTA or CCA
-    ks = keys(toml)
-    if "cta" ∈ ks
-        # We need the operating resistance
-        if "R" ∉ toml["cta"]
-            error("A CTA should have the operating resistance specified as field `R`")
+    # First we need to read the resistance
+    if !haskey(toml, "resistance")
+        error("A thermal anemometer probe should have a resistance element!")
+    else
+        R = toml_resistance(toml["resistance"])
+    end
+
+    # Now we read the bridge (hardware) configuration
+    if !haskey(toml, "bridge")
+        error("An anemometer should specify a bridge (hardware configuration)")
+    else
+        bridge = toml_bridge(toml["bridge"])
+    end
+
+    # This is the data acquisition
+    if haskey(toml, "daq")
+        daq = toml_daq(toml["daq"])
+    else
+        daq = nothing
+    end
+
+    if !haskey(toml, "calibration")
+        error("If you just want the voltages, no calibration stuff, set `calibration = false`")
+    else
+        if !(toml isa AbstractDict)
+            if toml["calibration"] != false
+                error("If there is no calibration table, `calibration` should be `false`")
+            else
+                cal = nothing
+            end
         else
-            Rw = toml["cta"]["R"]
+            cal = toml_calibration(toml["calibration"])
         end
     end
-    
-    # We should get the resistance element
-    if "resistance" ∉ ks
-        error("A resistance element should be present in `resistance` field")
+
+    # Now the correction model
+    if !isnothing(cal)
+        if !haskey(toml, "correction")
+            error("With a calibration, there should be a correction model!")
+        end
+        correction = toml_correction(toml["correction"])
+        
     else
-        R = tomlconfig_resistance(toml["resistance"])
+        correction = nothing
     end
 
-    # Read hardware information
-    if "hardware" ∉ ks
-        error("Hardware not specified!")
-    else
-        hard = tomlconfig_hardware(toml["hardware"])
+    # Let's build the probe
+    
+    if bridge.mode == :cta
+        sensor = build_cta(R, bridge, cal, correction)
+    elseif bridge.mode == :cca
+        sensor = build_cca(R, bridge, cal, correction)
     end
     
-    # Read calibration:
-    if "calibration" ∉ ks
-        error("A calibration should be present")
-    end
-    
-    #return (U=U, E=E, T=T, P=P, fluid=fluid)
-    U, E, T, P, fluid = tomlconfig_calibration(toml["calibration"])
-    
+    return Probe1d(sensor, toml, daq)
+        
 end
 
-function tomlconfig_hardware(toml)
-    ks = keys(toml)
+function build_cta(R, bridge, cal, correction)
+    Rw = bridge.params.R
+
+    if isnothing(cal)
+        calibr = NoCalibr(293.15, 101325.0, AIR)
+    else
+        calibr = correction.fun(R, cal.U, cal.E, Rw,
+                                cal.T, cal.P, correction.fit;
+                                fluid=cal.fluid, correction.params...)
+    end
+    return CTASensor(R, Rw, calibr)
+        
+end
+
+function build_cca(R, bridge, cal, correction)
+    I = bridge.params.I
+    if isnothing(cal)
+        calibr = NoCalibr(293.15, 101325.0, AIR)
+    else
+        Rw = cal.E ./ I
+        calibr = correction.fun(R, cal.U, cal.E, Rw,
+                                cal.T, cal.P, correction.fit;
+                                fluid=cal.fluid, correction.params...)
+    end
+    return CCASensor(R, I, calibr)
+        
+end
+
+function toml_bridge(toml)
 
     # Check the mode
-    if "mode" ∉ ks
-        mode = :cta
+    if !haskey(toml, "mode")
+        m = :cta
     else
         m = Symbol(lowercase(toml["mode"]))
         if m != :cta && m != :cca
@@ -69,40 +117,42 @@ function tomlconfig_hardware(toml)
         end
     end
 
+                     
     if m == :cta
         # We should read the resistance
-        if "R" ∉ ks
+        if !haskey(toml, "R")
             error("A `cta` probe should specify the operating resistance")
         else
-            hard_param = toml["R"]
+            params = (R=toml["R"],)
         end
+                     
     else
-        if "I" ∉ ks
+        if !haskey(toml, "I")
             error("A `cca` probe should specify the operating current")
         else
-            hard_param = toml["I"]
+            params = (I=toml["I"],)
         end
     end
 
     # Now we will read the signal processing stuff
-    if "gain" ∈ ks
+    if haskey(toml, "gain")
         gain = toml["gain"]
     else
         gain = 1.0
     end
     
-    if "offset" ∈ ks
+    if haskey(toml, "offset")
         offset = toml["offset"]
     else
         offset = 0.0
     end
 
-    return (mode=m, param=hard_param, gain=gain, offset=offset)
+    return (mode=m, params=params, gain=gain, offset=offset)
 end
 
 
 
-function tomlconfig_resistance(toml)
+function toml_resistance(toml)
     ks = keys(toml)
     if "type" ∉ ks
         # If not provided we will assume linear resistor
@@ -130,16 +180,16 @@ function tomlconfig_resistance(toml)
 end
 
 
-function tomlconfig_fluid(toml)
+function toml_fluid(toml)
     if toml isa AbstractString
         s = string(toml)
-        if s ∉ keys(standard_ideal_fluid_table)
+        if !haskey(standard_ideal_fluid_table, s)
             error("Fluid $s is not currently available")
         else
             return standard_ideal_fluid_table[s]
         end
     else
-        if "type" ∉ keys(toml)
+        if !haskey(toml, "type")
             # We should specify somehow the type of fluid model here
             error("I don't know how to create the fluid. You should specify the type")
         else
@@ -194,16 +244,15 @@ function tomlconfig_fluid(toml)
 end
 
 
-function tomlconfig_calibration(toml)
+function toml_calibration(toml)
 
     # A calibration has the fields E, U, T, P and fluid
-    ks = keys(toml)
-    if "E" ∉ ks
+    if !haskey(toml, "E")
         error("Probe calibration should have field `E` with voltage")
     else
         E = Float64.(toml["E"])
     end
-    if "U" ∉ ks
+    if !haskey(toml, "U")
         error("Probe calibration should have field `U` with velocity")
     else
         U = Float64.(toml["U"])
@@ -212,7 +261,7 @@ function tomlconfig_calibration(toml)
     Nu = length(U)
     @assert Ne == Nu "U ($Nu elements) should have the same length as E ($Ne elements)"
     
-    if "T" ∉ ks
+    if !haskey(toml, "T")
         error("Probe calibration should have field `T` with temperature")
     else
         T1 = toml["T"]
@@ -224,7 +273,7 @@ function tomlconfig_calibration(toml)
         end
     end
 
-    if "P" ∉ ks
+    if !haskey(toml, "P")
         error("Probe calibration should have field `T` with pressure")
     else
         P1 = toml["P"]
@@ -237,12 +286,60 @@ function tomlconfig_calibration(toml)
     end
 
     # Now we should read the fluid. If not provided we will assume AIR
-    if "fluid" ∉ ks
+    if !haskey(toml, "fluid")
         fluid = AIR
     else
-        fluid = tomlconfig_fluid(toml["fluid"])
+        fluid = toml_fluid(toml["fluid"])
     end
 
     return (U=U, E=E, T=T, P=P, fluid=fluid)
     
+end
+
+
+function toml_fit(toml)
+    model = toml["model"]
+
+    if model == "KingPoly"
+        n = toml["n"]
+        a = toml["a"]
+        fun = (x,y) -> KingPoly(x, y, a, n)
+    elseif model == "Polynomial"
+        model == "Polynomial"
+        n = toml["n"]
+        fun =  (x,y) -> Polynomials.fit(x, y, n)
+    else
+        error("Fit model is $model. Unknown, choose `KingPoly` or `Polynomial`")
+    end
+
+    return fun
+end
+
+function toml_correction(toml)
+    model = toml["model"]
+
+    if model == "HWCalibr"
+        model1 = HWCalibr
+        params = (n = toml["n"], theta = toml["theta"])
+        fit = toml_fit(toml["fit"])
+    elseif model == "TempCalibr" || model == "NoCorrection"
+        model1 = TempCalibr
+        params = nothing
+        fit = toml_fit(toml["fit"])
+    elseif model == "NoCorrection"
+        model1 = NoCorrection
+        params = ()
+        fit = toml_fit(toml["fit"])
+    else
+        error("Model $model  not implemented!")
+    end
+
+    return (model=model, fun=model1, params=params, fit=fit)
+end
+
+function toml_daq(toml)
+    device = toml["device"]
+    channel = toml["channel"]
+
+    return(dev=device, chan=channel)
 end
