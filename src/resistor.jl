@@ -189,3 +189,51 @@ temperature(th::Thermistor) = th.T
 
 
     
+# Functions to read and create TOML data for resistors
+
+function tomltoresistance(toml)
+    ks = keys(toml)
+    if "type" ∉ ks
+        # If not provided we will assume linear resistor
+        t = "linear"
+    else
+        t = toml["type"]
+    end
+
+    if t == "linear"
+        R0 = toml["R"]
+        a  = toml["a"]
+        T0 = toml["T"]
+        R = Resistor(R=R0, a=a, T=T0)
+    elseif t == "ntc" # Negtative temperature coefficient thermistor
+        R0 = toml["R"]
+        B  = toml["B"]
+        T0 = toml["T"]
+        R = Thermistor(R=R0, B=B, T=T0)
+    else
+        error("Unknown resistance element type `$t`")
+    end
+
+    return R
+        
+end
+
+resistancetotoml(R) = error("Resistor of type $(typeof(R)) unknown")
+function resistancetotoml(R::Resistor)
+    d = Dict{String,Any}()
+    d["type"] = "linear"
+    d["R"] = Float64(R.R)
+    d["a"] = Float64(R.a)
+    d["T"] = Float64(R.T)
+    return d
+end
+
+function resistancetotoml(R::Thermistor)
+    d = Dict{String,Any}()
+    d["type"] = "ntc"
+    d["R"] = Float64(R.R)
+    d["B"] = Float64(R.B)
+    d["T"] = Float64(R.T)
+    return d
+end
+    

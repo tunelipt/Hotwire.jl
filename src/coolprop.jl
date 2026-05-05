@@ -13,11 +13,15 @@ density(fl::CPFluid, T, P=101325.0) = PropsSI("D", "P", P, "T", T, fl.fluid)
 specheat(fl::CPFluid, T, P=101325.0) = PropsSI("C", "P", P, "T", T, fl.fluid)
 prandtl(fl::CPFluid, T, P=101325.0) = PropsSI("PRANDTL", "P", P, "T", T, fl.fluid)
 
+fluidtotoml(fluid::CPFluid) = Dict{String,Any}("type"=>"coolprop",
+                                               "composition"=>fluid.fluid)
 
 # Humid Air, we are going to use transport properties for dry air since they
 # don't appear to be implemented on coolprop
 
 struct HumidAir
+    T::Float64
+    P::Float64
     w::Float64
 end
 
@@ -27,13 +31,14 @@ function HumidAir(;T=293.15, P=101325.0, hum...)
     hval = first(values(hum))
     
     w = HAPropsSI("W", "T", T, "P", P, h, hval)
-    HumidAir(w)
+    HumidAir(T, P, w)
 end
 
 function HumidAir(T, P, hum_var, hum_val)
     w = HAPropsSI("W", "T", T, "P", P, hum_var, hum_val)
-    HumidAir(w)
+    HumidAir(T, P, w)
 end
+
 
 specheat(fl::HumidAir, T, P=101325.0) = HAPropsSI("cp_ha", "P", P, "T", T, "W", fl.w)
 heatcond(fl::HumidAir, T, P=101325.0) = HAPropsSI("K", "P", P, "T", T, "W", fl.w)
@@ -41,3 +46,12 @@ density(fl::HumidAir, T, P=101325.0) = 1/HAPropsSI("Vha", "P", P, "T", T, "W", f
 viscosity(fl::HumidAir, T, P=101325.0) = HAPropsSI("M", "P", P, "T", T, "W", fl.w)
 # Prandtl will be calculated from the other properties
 #prandtl(fl::HumidAir, T, P=101325.0) = PropsSI("PRANDTL", "P", P, "T", T, "Air")
+
+function fluidtotoml(fluid::HumidAir)
+    d = Dict{String,Any}()
+    d["T"] = fluid.T
+    d["P"] = fluid.P
+    d["W"] = fluid.w
+    return d
+end
+

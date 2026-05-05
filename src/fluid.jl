@@ -1,5 +1,5 @@
 
-import Polynomials: ImmutablePolynomial
+import Polynomials: ImmutablePolynomial, coeffs
 
 const IPoly = ImmutablePolynomial
 
@@ -168,3 +168,91 @@ const standard_ideal_fluid_table = Dict("AIR"=>AIR,
                                         "HYDROGEN"=>HYDROGEN)
 
                                  
+function tomltofluid(toml)
+    if toml isa AbstractString
+        s = string(toml)
+        if !haskey(standard_ideal_fluid_table, s)
+            error("Fluid $s is not currently available")
+        else
+            return standard_ideal_fluid_table[s]
+        end
+    else
+        if !haskey(toml, "type")
+            # We should specify somehow the type of fluid model here
+            error("I don't know how to create the fluid. You should specify the type")
+        else
+            t = toml["type"]
+            if t == "constant"
+                # We should specify the following properties:
+                # rho, mu, k, cp.
+                rho = toml["rho"]  # Density
+                mu = toml["mu"]  # Dynamic viscosity
+                k  = toml["k"]   # thermal conductivity function
+                cp = toml["cp"]  # Specific heat at constant pressure
+                return ConstPropFluid(rho, mu, k, cp)
+            elseif t == "coolprop_constant"
+                fl = toml["composition"]
+                T = toml["T"]
+                P = toml["P"]
+                rho = PropsSI("D", "P", P, "T", T, fl)
+                mu = PropsSI("V", "P", P, "T", T, fl)
+                k = PropsSI("L", "P", P, "T", T, fl)
+                cp = PropsSI("C", "P", P, "T", T, fl)
+                return ConstPropFluid(rho, mu, k, cp)
+            elseif t == "coolprop"
+                # For now only pure fluids should be used
+                # I will try to improve on that later. CoolProp is really cool...
+                return CPFluid(toml["composition"])
+            elseif t == "humidair"
+                # We will also use CoolProp
+                # But the Psychrometrics stuff.
+                T = 293.15
+                P = 101325.0
+                hvar = "R"  # Relative humidity
+                hval  = 0.5  # 50%
+                humvars = ["W", "B", "D", "R", "Y"] 
+                for (kk,vv) in toml
+                    
+                    if kk == "T"
+                        T = vv
+                    elseif kk == "P"
+                        P = vv
+                    elseif kk ∈ humvars
+                        hvar = kk
+                        hval = vv
+                    end
+                end
+                return HumidAir(T, P, hvar, hval)
+            else
+                error("Unknown fluid type $t")
+            end
+        end
+        
+    end
+end
+
+
+fluidtotoml(fluid) = error("Not implemented for fluids of type $(typeof(fluid))")
+
+function fluidtotoml(fluid::ConstPropFluid)
+    d = Dict{String,Any}
+    d["rho"] = fluid.ρ  # Density
+    d["mu"] = fluid.μ  # Dynamic viscosity
+    d["k"] =  fluid.k # thermal conductivity function
+    d["cp"] = fluid.cp  # Specific heat at constant pressure
+    return d
+end
+
+
+
+function fluidtotoml(fluid::IdealGas)
+    for (flname,flval) in standard_ideal_fluid_table
+        if fluid == flval
+            return flname
+        end
+    end
+    
+    error("I still don't know how to write fluid of type `$(typeof(fluid))`")
+end
+
+        

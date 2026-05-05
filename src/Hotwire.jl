@@ -55,7 +55,7 @@ include("toml.jl")
 
 import LabDaqConfig: labdaqregister
 function __init__()
-    labdaqregister("hotwire", hwconfig)
+    labdaqregister("hotwire", tomltohotwire)
     return nothing
 end
 end # module

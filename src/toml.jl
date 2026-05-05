@@ -1,6 +1,6 @@
 # Configuring anemometers from TOML
 
-function toml_hotwire(toml)
+function tomltohotwire(toml)
     t = toml["type"] 
     if t != "hotwire"
         error("Type expected: `hotwire` got `$t`")
@@ -23,7 +23,7 @@ function toml_hw1d(toml)
     if !haskey(toml, "resistance")
         error("A thermal anemometer probe should have a resistance element!")
     else
-        R = toml_resistance(toml["resistance"])
+        R = tomltoresistance(toml["resistance"])
     end
 
     # Now we read the bridge (hardware) configuration
@@ -152,96 +152,8 @@ end
 
 
 
-function toml_resistance(toml)
-    ks = keys(toml)
-    if "type" ∉ ks
-        # If not provided we will assume linear resistor
-        t = "linear"
-    else
-        t = toml["type"]
-    end
-
-    if t == "linear"
-        R0 = toml["R"]
-        a  = toml["a"]
-        T0 = toml["T"]
-        R = Resistor(R=R0, a=a, T=T0)
-    elseif t == "ntc" # Negtative temperature coefficient thermistor
-        R0 = toml["R"]
-        B  = toml["B"]
-        T0 = toml["T"]
-        R = Thermistor(R=R0, B=B, T=T0)
-    else
-        error("Unknown resistance element type `$t`")
-    end
-
-    return R
-        
-end
 
 
-function toml_fluid(toml)
-    if toml isa AbstractString
-        s = string(toml)
-        if !haskey(standard_ideal_fluid_table, s)
-            error("Fluid $s is not currently available")
-        else
-            return standard_ideal_fluid_table[s]
-        end
-    else
-        if !haskey(toml, "type")
-            # We should specify somehow the type of fluid model here
-            error("I don't know how to create the fluid. You should specify the type")
-        else
-            t = toml["type"]
-            if t == "constant"
-                # We should specify the following properties:
-                # rho, mu, k, cp.
-                rho = toml["rho"]  # Density
-                mu = toml["mu"]  # Dynamic viscosity
-                k  = toml["k"]   # thermal conductivity function
-                cp = toml["cp"]  # Specific heat at constant pressure
-                return ConstPropFluid(rho, mu, k, cp)
-            elseif t == "coolprop_constant"
-                fl = toml["composition"]
-                T = toml["T"]
-                P = toml["P"]
-                rho = PropsSI("D", "P", P, "T", T, fl)
-                mu = PropsSI("V", "P", P, "T", T, fl)
-                k = PropsSI("L", "P", P, "T", T, fl)
-                cp = PropsSI("C", "P", P, "T", T, fl)
-                return ConstPropFluid(rho, mu, k, cp)
-            elseif t == "coolprop"
-                # For now only pure fluids should be used
-                # I will try to improve on that later. CoolProp is really cool...
-                return CPFluid(toml["composition"])
-            elseif t == "humidair"
-                # We will also use CoolProp
-                # But the Psychrometrics stuff.
-                T = 293.15
-                P = 101325.0
-                hvar = "R"  # Relative humidity
-                hval  = 0.5  # 50%
-                humvars = ["W", "B", "D", "R", "Y"] 
-                for (kk,vv) in toml
-                    
-                    if kk == "T"
-                        T = vv
-                    elseif kk == "P"
-                        P = vv
-                    elseif kk ∈ humvars
-                        hvar = kk
-                        hval = vv
-                    end
-                end
-                return HumidAir(T, P, hvar, hval)
-            else
-                error("Unknown fluid type $t")
-            end
-        end
-        
-    end
-end
 
 
 function toml_calibration(toml)
@@ -289,7 +201,7 @@ function toml_calibration(toml)
     if !haskey(toml, "fluid")
         fluid = AIR
     else
-        fluid = toml_fluid(toml["fluid"])
+        fluid = tomltofluid(toml["fluid"])
     end
 
     return (U=U, E=E, T=T, P=P, fluid=fluid)
