@@ -1,0 +1,5 @@
+[multianem]
+type = "multianem"
+
+[multianem.resistance]
+type = "ntc"
