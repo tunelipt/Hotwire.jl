@@ -95,6 +95,43 @@ makekingfitfun(;a=0.45, N=4) =
 
 
     
+function tomltofit(toml)
+    model = toml["model"]
+
+    if model == "KingPoly"
+        a = toml["a"]
+        if haskey(toml, "coeffs")
+            # We have a specific polynomial
+            coeffs = Float64.(toml["coeffs"])
+            poly = Polynomial(coeffs)
+            fun = KingPoly(poly, a)
+            fitted = true
+        else
+            # We will return a function that fits the data
+            n = toml["n"]
+            fun = (x,y) -> KingPoly(x, y, a, n)
+            fitted = false
+        end
+        
+    elseif model == "Polynomial"
+        model == "Polynomial"
+        if haskey(toml, "coeffs")
+            # We have a specific polynomial
+            coeffs = Float64.(toml["coeffs"])
+            fun = Polynomial(coeffs)
+            fitted = true
+        else
+            n = toml["n"]
+            fun =  (x,y) -> Polynomials.fit(x, y, n)
+            fitted = false
+        end
+        
+    else
+        error("Fit model is $model. Unknown, choose `KingPoly` or `Polynomial`")
+    end
+
+    return fun, fitted
+end
 
 
 

@@ -8,7 +8,7 @@ function tomltohotwire(toml)
     
     if !haskey(toml, "nwires") || toml["nwires"] == 1
         # We will assume 1 wire
-        return toml_hw1d(toml)
+        return tomltohw1d(toml)
     else
         Nw = toml["nwires"]
     end
@@ -17,7 +17,7 @@ function tomltohotwire(toml)
 end
 
 
-function toml_hw1d(toml)
+function tomltohw1d(toml)
     
     # First we need to read the resistance
     if !haskey(toml, "resistance")
@@ -30,12 +30,12 @@ function toml_hw1d(toml)
     if !haskey(toml, "bridge")
         error("An anemometer should specify a bridge (hardware configuration)")
     else
-        bridge = toml_bridge(toml["bridge"])
+        bridge = tomltobridge(toml["bridge"])
     end
 
     # This is the data acquisition
     if haskey(toml, "daq")
-        daq = toml_daq(toml["daq"])
+        daq = tomltodaq(toml["daq"])
     else
         daq = nothing
     end
@@ -50,7 +50,7 @@ function toml_hw1d(toml)
                 cal = nothing
             end
         else
-            cal = toml_calibration(toml["calibration"])
+            cal = tomltocalibration(toml["calibration"])
         end
     end
 
@@ -59,7 +59,7 @@ function toml_hw1d(toml)
         if !haskey(toml, "correction")
             error("With a calibration, there should be a correction model!")
         end
-        correction = toml_correction(toml["correction"])
+        correction = tomltocorrection(toml["correction"])
         
     else
         correction = nothing
@@ -105,7 +105,7 @@ function build_cca(R, bridge, cal, correction)
         
 end
 
-function toml_bridge(toml)
+function tomltobridge(toml)
 
     # Check the mode
     if !haskey(toml, "mode")
@@ -156,7 +156,7 @@ end
 
 
 
-function toml_calibration(toml)
+function tomltocalibration(toml)
 
     # A calibration has the fields E, U, T, P and fluid
     if !haskey(toml, "E")
@@ -209,39 +209,22 @@ function toml_calibration(toml)
 end
 
 
-function toml_fit(toml)
-    model = toml["model"]
 
-    if model == "KingPoly"
-        n = toml["n"]
-        a = toml["a"]
-        fun = (x,y) -> KingPoly(x, y, a, n)
-    elseif model == "Polynomial"
-        model == "Polynomial"
-        n = toml["n"]
-        fun =  (x,y) -> Polynomials.fit(x, y, n)
-    else
-        error("Fit model is $model. Unknown, choose `KingPoly` or `Polynomial`")
-    end
-
-    return fun
-end
-
-function toml_correction(toml)
+function tomltocorrection(toml)
     model = toml["model"]
 
     if model == "HWCalibr"
         model1 = HWCalibr
         params = (n = toml["n"], theta = toml["theta"])
-        fit = toml_fit(toml["fit"])
+        fit = tomltofit(toml["fit"])
     elseif model == "TempCalibr" || model == "NoCorrection"
         model1 = TempCalibr
         params = nothing
-        fit = toml_fit(toml["fit"])
+        fit = tomltofit(toml["fit"])
     elseif model == "NoCorrection"
         model1 = NoCorrection
         params = ()
-        fit = toml_fit(toml["fit"])
+        fit = tomltofit(toml["fit"])
     else
         error("Model $model  not implemented!")
     end
@@ -249,7 +232,7 @@ function toml_correction(toml)
     return (model=model, fun=model1, params=params, fit=fit)
 end
 
-function toml_daq(toml)
+function tomltodaq(toml)
     device = toml["device"]
     channel = toml["channel"]
 
